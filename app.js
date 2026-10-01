@@ -178,7 +178,180 @@ S.tasks = S.tasks || [];
 S.subs = S.subs || [];
 S.affiliate = S.affiliate || { code: 'JORDAN10', earned: 0, clicks: 0 };
 S.goal = S.goal || 3000;
-const save = () => { try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) {} };
+/* ================= MULTI-USER AUTH + SHARED PLATFORM (v6) =================
+   Everyone shares the same marketplace (products, gigs, coaches, posts...).
+   Each human gets their own private profile: wallet, cart, orders, etc.
+   Stored as: platform in KEY, users DB in USERS_KEY, session in SESSION_KEY.
+   Existing code keeps using S.user / S.cart etc — S is the live working copy
+   = shared platform + current user's private slice overlaid. save() persists both. */
+const USERS_KEY = 'empower_users_v6';
+const SESSION_KEY = 'empower_session_v6';
+const PRIVATE_KEYS = ['user','cart','wishlist','orders','sold','bookings','txs','notifs','points','streak','lastCheckin','badges','recent','tasks','subs','affiliate','tickets','threads','disputes','giftCodes','following','messages','myCoach','coupon','addresses','payMethods','prefs','theme','goal','onboarded','dealOverride','bundlePct','profile'];
+function hashPw(pw, salt) {
+  const s = String(pw || '') + '::' + String(salt || '');
+  let h1 = 0xdeadbeef, h2 = 0x41c6ce57;
+  for (let i = 0; i < s.length; i++) {
+    const ch = s.charCodeAt(i);
+    h1 = Math.imul(h1 ^ ch, 2654435761);
+    h2 = Math.imul(h2 ^ ch, 1597334677);
+  }
+  h1 = Math.imul(h1 ^ (h1 >>> 16), 2246822507) ^ Math.imul(h2 ^ (h2 >>> 13), 3266489909);
+  h2 = Math.imul(h2 ^ (h2 >>> 16), 2246822507) ^ Math.imul(h1 ^ (h1 >>> 13), 3266489909);
+  return (4294967296 * (2097151 & h2) + (h1 >>> 0)).toString(16);
+}
+function defaultPrivate(name, email) {
+  const first = (name || 'New').split(' ')[0] || 'New';
+  const handle = '@' + first.toLowerCase().replace(/[^a-z0-9]+/g, '') + Math.floor(100 + Math.random() * 900);
+  return {
+    user: { name: name || 'New Earner', email: email || '', balance: 750, memberSince: '2026', avatar: initials(name || 'NE'), address: '', emoji: '🧑‍🚀', currency: 'USD', plus: false, referral: first.toUpperCase().slice(0, 8) + '-' + Math.floor(1000 + Math.random() * 9000), invites: 0 },
+    profile: { handle, bio: 'New on Empower — buying, selling & learning. Say hi! 👋', cover: 'linear-gradient(135deg,#7c3aed,#0ea5e9)', location: '', website: '', verified: false },
+    cart: [], wishlist: [], orders: [], sold: [], bookings: [],
+    txs: [{ t: 'Welcome bonus', a: 750, d: 'Today', k: 'in' }],
+    notifs: [{ t: 'Welcome to Empower! Your wallet, cart & orders are private to you. The marketplace is shared with everyone.', d: 'Today', read: false }],
+    points: 50, streak: 0, lastCheckin: '', badges: ['welcome'],
+    recent: [], tasks: [], subs: [], affiliate: { code: first.toUpperCase().slice(0, 6) + '10', earned: 0, clicks: 0 },
+    tickets: [], threads: [{ id: uid('T'), from: 'Empower Support', kind: 'orders', title: 'Welcome 🎉', preview: 'How Empower works…', time: 'Today', unread: 1, msgs: [{ me: false, t: 'Welcome! Browse as much as you like. Your cart, wallet and orders are yours alone — the marketplace is shared with everyone, like eBay + Instagram in one.' }] }],
+    disputes: [], giftCodes: [], following: [], messages: {}, myCoach: null, coupon: null,
+    addresses: [], payMethods: ['Visa •• 4242'], prefs: { feed: true, outbid: true, pricedrop: true },
+    theme: 'dark', goal: 3000, onboarded: true, dealOverride: {}, bundlePct: 0
+  };
+}
+function getUsersDB() {
+  try {
+    const raw = localStorage.getItem(USERS_KEY);
+    if (raw) { const d = JSON.parse(raw); if (d && d.users) return d; }
+  } catch (e) {}
+  return { users: {} };
+}
+function setUsersDB(db) { try { localStorage.setItem(USERS_KEY, JSON.stringify(db)); } catch (e) {} }
+function getSessionId() { try { return localStorage.getItem(SESSION_KEY) || null; } catch (e) { return null; } }
+function setSessionId(id) { try { if (id) localStorage.setItem(SESSION_KEY, id); else localStorage.removeItem(SESSION_KEY); } catch (e) {} }
+function snapshotPrivate() {
+  const o = {};
+  PRIVATE_KEYS.forEach(k => { o[k] = S[k]; });
+  return o;
+}
+function persistCurrentUser() {
+  try {
+    const sid = getSessionId();
+    if (!sid || sid === 'guest') return;
+    const db = getUsersDB();
+    if (!db.users[sid]) return;
+    Object.assign(db.users[sid], { private: snapshotPrivate(), name: S.user.name, email: S.user.email, emoji: S.user.emoji, handle: (S.profile || {}).handle || db.users[sid].handle, bio: (S.profile || {}).bio || '', cover: (S.profile || {}).cover, verified: !!(S.profile || {}).verified, lastActive: Date.now() });
+    setUsersDB(db);
+  } catch (e) {}
+}
+const _baseSave = () => { try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) {} };
+const save = () => { _baseSave(); persistCurrentUser(); };
+function loadUserIntoS(userId) {
+  const db = getUsersDB();
+  const rec = db.users[userId];
+  if (!rec || !rec.private) return false;
+  PRIVATE_KEYS.forEach(k => { if (rec.private[k] !== undefined) S[k] = rec.private[k]; });
+  S.user.currency = S.user.currency || 'USD';
+  S.profile = S.profile || { handle: '@user', bio: '', cover: 'linear-gradient(135deg,#7c3aed,#0ea5e9)' };
+  return true;
+}
+function currentUserId() { return getSessionId(); }
+function isGuest() { const s = getSessionId(); return !s || s === 'guest'; }
+function currentProfile() {
+  if (isGuest()) return { name: 'Guest', handle: '@guest', bio: 'Browsing as guest', emoji: '👤', cover: 'linear-gradient(135deg,#444,#888)', verified: false };
+  return { name: S.user.name, handle: (S.profile || {}).handle, bio: (S.profile || {}).bio, emoji: S.user.emoji, cover: (S.profile || {}).cover, verified: !!(S.profile || {}).verified, email: S.user.email };
+}
+function ensureDemoUsers() {
+  const db = getUsersDB();
+  let changed = false;
+  const demos = [
+    { id: 'u_jordan', name: 'Jordan Doe', email: 'jordan@empower.app', pw: 'empower123', emoji: '🧑‍🚀', bio: 'Top seller — home goods & digital packs. I reply in ~2h. 📦', verified: true },
+    { id: 'u_maya', name: 'Maya Atelier', email: 'maya@empower.app', pw: 'empower123', emoji: '👜', bio: 'Leather goods studio. Full-grain everything. New drops Fridays. ✨', verified: true },
+    { id: 'u_alex', name: 'Alex Morgan', email: 'alex@empower.app', pw: 'empower123', emoji: '🧑‍💼', bio: 'E-commerce coach — 0 → $10k/mo playbook. 320+ sessions. 🚀', verified: true },
+    { id: 'u_priya', name: 'Priya Nair', email: 'priya@empower.app', pw: 'empower123', emoji: '🏋️', bio: 'Fitness coach — strength for busy people. 💪', verified: true }
+  ];
+  demos.forEach(d => {
+    if (!db.users[d.id]) {
+      const priv = defaultPrivate(d.name, d.email);
+      priv.user.balance = 1250;
+      priv.user.emoji = d.emoji;
+      priv.profile.bio = d.bio;
+      priv.profile.verified = true;
+      priv.profile.handle = '@' + d.name.split(' ')[0].toLowerCase();
+      db.users[d.id] = { id: d.id, name: d.name, email: d.email, pwHash: hashPw(d.pw, d.email), salt: d.email, emoji: d.emoji, handle: priv.profile.handle, bio: d.bio, cover: 'linear-gradient(135deg,#7c3aed,#db2777)', verified: true, createdAt: Date.now(), lastActive: Date.now(), private: priv };
+      changed = true;
+    }
+  });
+  // Migrate legacy single-user (pre-v6) into Jordan if Jordan is fresh and legacy data exists
+  try {
+    if (S && S.user && S.user.email === 'jordan@empower.app' && db.users['u_jordan'] && (db.users['u_jordan'].private.orders || []).length === 0 && (S.orders || []).length > 0) {
+      db.users['u_jordan'].private = snapshotPrivate();
+      db.users['u_jordan'].private.user.balance = S.user.balance;
+      changed = true;
+    }
+  } catch (e) {}
+  if (changed) setUsersDB(db);
+  // If no session yet, default to Jordan (preserves existing behaviour) — user can switch/logout after
+  if (!getSessionId()) {
+    setSessionId('u_jordan');
+    loadUserIntoS('u_jordan');
+    _baseSave();
+  } else if (getSessionId() !== 'guest') {
+    loadUserIntoS(getSessionId());
+  } else {
+    // guest: keep platform, blank private
+    const g = defaultPrivate('Guest', '');
+    g.user.balance = 0;
+    PRIVATE_KEYS.forEach(k => { if (g[k] !== undefined) S[k] = g[k]; });
+    S.user.name = 'Guest';
+  }
+}
+function doSignup(name, email, pw) {
+  email = String(email || '').trim().toLowerCase();
+  name = String(name || '').trim() || 'New Earner';
+  if (!email || email.indexOf('@') < 0) return { ok: false, err: 'Enter a valid email.' };
+  if (!pw || pw.length < 6) return { ok: false, err: 'Password needs 6+ characters.' };
+  const db = getUsersDB();
+  const exists = Object.values(db.users).find(u => (u.email || '').toLowerCase() === email);
+  if (exists) return { ok: false, err: 'That email already has an account — try Log in.' };
+  const id = 'u_' + Date.now().toString(36) + Math.floor(Math.random() * 999);
+  const priv = defaultPrivate(name, email);
+  db.users[id] = { id, name, email, pwHash: hashPw(pw, email), salt: email, emoji: '🧑‍🚀', handle: priv.profile.handle, bio: priv.profile.bio, cover: priv.profile.cover, verified: false, createdAt: Date.now(), lastActive: Date.now(), private: priv };
+  setUsersDB(db);
+  persistCurrentUser();
+  setSessionId(id);
+  loadUserIntoS(id);
+  _baseSave();
+  return { ok: true, id };
+}
+function doLogin(email, pw) {
+  email = String(email || '').trim().toLowerCase();
+  const db = getUsersDB();
+  const rec = Object.values(db.users).find(u => (u.email || '').toLowerCase() === email);
+  if (!rec) return { ok: false, err: 'No account for that email — try Sign up or a demo login.' };
+  if (rec.pwHash !== hashPw(pw, rec.salt)) return { ok: false, err: 'Wrong password. Hint for demos: empower123' };
+  persistCurrentUser();
+  setSessionId(rec.id);
+  loadUserIntoS(rec.id);
+  _baseSave();
+  return { ok: true, id: rec.id };
+}
+function doLogout() { persistCurrentUser(); setSessionId('guest'); const g = defaultPrivate('Guest', ''); g.user.balance = 0; PRIVATE_KEYS.forEach(k => { if (g[k] !== undefined) S[k] = g[k]; }); S.user.name = 'Guest'; _baseSave(); }
+function doContinueAs(id) { persistCurrentUser(); setSessionId(id); loadUserIntoS(id); _baseSave(); }
+function requireAuth(action) {
+  if (!isGuest()) return true;
+  openAuth('login', 'Please log in to ' + (action || 'do that') + ' — your stuff stays private to you.');
+  return false;
+}
+function getPublicProfiles() {
+  const db = getUsersDB();
+  const arr = Object.values(db.users).map(u => {
+    const priv = u.private || {};
+    const orders = (priv.orders || []).length;
+    const listings = (S.products || []).filter(p => p.seller && u.name && p.seller.indexOf(u.name.split(' ')[0]) >= 0).length;
+    return { id: u.id, name: u.name, handle: u.handle, bio: u.bio, emoji: u.emoji || '🧑‍🚀', cover: u.cover, verified: !!u.verified, listings, orders, points: (priv.points || 0) };
+  });
+  // include session guest? no
+  arr.sort((a, b) => (b.points || 0) - (a.points || 0));
+  return arr;
+}
 function applyTheme() { document.documentElement.dataset.theme = S.theme === 'light' ? 'light' : ''; const b = $('#themeBtn'); if (b) b.textContent = S.theme === 'light' ? '☀️' : '🌙'; }
 
 /* ---------- helpers ---------- */
@@ -220,7 +393,7 @@ function imgHTML(p, cls) {
 function stars(r) { const f = Math.round(Number(r) || 0); return '★'.repeat(f) + '☆'.repeat(Math.max(0, 5 - f)); }
 
 /* ---------- navigation (hash routing) ---------- */
-const VIEWS = ['marketplace', 'deals', 'auctions', 'services', 'learn', 'events', 'coaches', 'community', 'sell', 'become-coach', 'dashboard', 'orders', 'inbox', 'rewards', 'wishlist', 'wallet', 'settings'];
+const VIEWS = ['marketplace', 'deals', 'auctions', 'services', 'learn', 'events', 'coaches', 'community', 'sell', 'become-coach', 'dashboard', 'orders', 'inbox', 'rewards', 'wishlist', 'wallet', 'settings', 'people', 'profile'];
 function nav(name) {
   if (VIEWS.indexOf(name) < 0) name = 'marketplace';
   $$('#mainNav button').forEach(b => b.classList.toggle('active', b.dataset.nav === name));
@@ -245,6 +418,8 @@ function nav(name) {
   if (name === 'inbox') renderInbox();
   if (name === 'rewards') renderRewards();
   if (name === 'settings') renderSettings();
+  if (name === 'people') renderPeople();
+  if (name === 'profile') renderProfile(S.viewProfileId || currentUserId());
 }
 window.nav = nav;
 document.addEventListener('click', e => {
@@ -496,6 +671,7 @@ function applyCoupon(code) {
 }
 let checkout = { step: 1, name: '', address: '', zip: '', pay: 'balance' };
 function startCheckout() {
+  if (!requireAuth('check out')) return;
   if (!S.cart.length) { toast('Cart is empty', 'err'); return; }
   checkout = { step: 1, name: S.user.name, address: S.user.address, zip: '', pay: 'balance' };
   drawCheckout();
@@ -736,6 +912,7 @@ function bookCoach(id, viewOnly) {
 }
 window.bookCoach = bookCoach;
 function confirmBooking(id, forcedTotal) {
+  if (!requireAuth('book a coach')) return;
   const c = S.coaches.find(x => x.id === id); if (!c) return;
   const per = booking.dur === 1 ? c.rate : c.rate / 2;
   const total = forcedTotal != null ? forcedTotal : per * booking.pack;
@@ -912,18 +1089,8 @@ function maybeOnboard() {
   });
 }
 function profileModal() {
-  openModal('<h3>' + esc(S.user.emoji) + ' ' + esc(S.user.name) + '</h3><p class="muted small">' + esc(S.user.email) + ' • Member since ' + esc(S.user.memberSince) + ' • <span class="tag ok">Gold seller • 4.9★</span></p>' +
-    '<div class="row2"><label>Name<input id="pfName" value="' + esc(S.user.name) + '" /></label><label>Avatar emoji<input id="pfEmoji" value="' + esc(S.user.emoji) + '" maxlength="4" /></label></div>' +
-    '<label>Default address<input id="pfAddr" value="' + esc(S.user.address) + '" /></label>' +
-    '<div class="list-row"><div class="grow"><b>Stats</b><span>' + S.orders.length + ' bought • ' + S.products.filter(p => p.mine).length + ' listings • ' + S.bookings.length + ' sessions</span></div><b>' + ec(S.user.balance) + '</b></div>' +
-    '<div style="display:flex;gap:8px;margin-top:10px"><button class="btn primary" style="flex:1" id="pfSave">Save</button><button class="btn" onclick="closeModal()">Close</button></div>');
-  $('#pfSave').onclick = () => {
-    S.user.name = $('#pfName').value.trim() || S.user.name;
-    S.user.emoji = $('#pfEmoji').value.trim() || '🧑‍🚀';
-    S.user.address = $('#pfAddr').value.trim() || S.user.address;
-    S.user.avatar = initials(S.user.name);
-    save(); closeModal(); updateWalletUI(); renderDashboard(); toast('Profile saved ✓', 'ok');
-  };
+  if (isGuest()) { openAuth('login', 'Log in to open your profile.'); return; }
+  S.viewProfileId = currentUserId(); save(); nav('profile');
 }
 
 /* ---------- v3 modules: deals / services / learn / community / inbox / plus / gifts / offers / disputes / storefronts ---------- */
@@ -1003,6 +1170,7 @@ function renderServices() {
   });
 }
 function hireGig(id) {
+  if (!requireAuth('hire freelancers')) return;
   const g = S.gigs.find(x => x.id === id); if (!g) return;
   openModal('<h3>Hire: ' + esc(g.title) + '</h3><p class="muted small">by ' + esc(g.seller) + ' • ★ ' + g.rating + ' • delivery ' + esc(g.delivery) + '</p>' +
     '<label>Project details<textarea id="gigBrief" rows="3" placeholder="Goals, links, deadline…"></textarea></label>' +
@@ -1250,6 +1418,7 @@ function renderAuctions() {
   const wo = $('#watchOnly'); if (wo) wo.onchange = renderAuctions;
 }
 function placeBid(id) {
+  if (!requireAuth('bid in auctions')) return;
   const a = S.auctions.find(x => x.id === id); if (!a) return;
   const v = Number(($('#bid-' + id) || {}).value || 0);
   if (!(v > a.bid)) { toast('Bid higher than ' + money(a.bid), 'err'); return; }
@@ -1503,6 +1672,192 @@ function liveShopModal() {
 }
 window.liveShopModal = liveShopModal;
 
+/* ============ SOCIAL + AUTH UI (shared platform, private profiles) ============ */
+function openAuth(tab, msg) {
+  const sc = $('#authScreen'); if (!sc) return;
+  sc.hidden = false;
+  if (tab) switchAuthTab(tab);
+  if (msg) toast(msg);
+  renderDemoLogins();
+  setTimeout(() => { const e = $('#loginEmail'); if (e && tab === 'login') e.focus(); }, 50);
+}
+function closeAuth() { const sc = $('#authScreen'); if (sc) sc.hidden = true; }
+function switchAuthTab(which) {
+  $$('#authTabs button').forEach(b => b.classList.toggle('active', b.dataset.at === which));
+  $('#authLogin').hidden = which !== 'login';
+  $('#authSignup').hidden = which !== 'signup';
+}
+function renderDemoLogins() {
+  const box = $('#demoLogins'); if (!box) return;
+  const db = getUsersDB();
+  const demos = Object.values(db.users).slice(0, 4);
+  box.innerHTML = demos.map(u => '<button data-demo="' + u.id + '">' + esc(u.emoji || '🧑') + ' ' + esc(u.name.split(' ')[0]) + '</button>').join('');
+  $$('#demoLogins [data-demo]').forEach(b => b.onclick = () => {
+    doContinueAs(b.dataset.demo);
+    closeAuth(); renderAll(); refreshAuthUI();
+    toast('Welcome back, ' + S.user.name.split(' ')[0] + '! 👋', 'ok');
+    nav('marketplace');
+  });
+}
+function refreshAuthUI() {
+  const guest = isGuest();
+  const sc = $('#authScreen');
+  // Show auth gate only if logged out AND user hasn't chosen guest browse? Always allow dismiss via guest.
+  // Keep topbar in sync:
+  const lb = $('#loginBtn'); if (lb) lb.hidden = !guest;
+  const ub = $('#userBtn'); if (ub) ub.style.display = guest ? 'none' : '';
+  const am = $('#accountMenu'); if (am && guest) am.hidden = true;
+  if (!guest) {
+    if (sc) sc.hidden = true;
+    const an = $('#accountName'); if (an) an.textContent = S.user.name;
+    const ah = $('#accountHandle'); if (ah) ah.textContent = ((S.profile || {}).handle || '@user') + ' • ' + ec(S.user.balance);
+    const aa = $('#accountAvatar'); if (aa) aa.textContent = initials(S.user.name);
+    if (ub) ub.textContent = initials(S.user.name);
+    renderSwitchList();
+  } else {
+    if (ub) ub.textContent = '👤';
+  }
+  updateWalletUI();
+}
+function renderSwitchList() {
+  const box = $('#switchList'); if (!box) return;
+  const db = getUsersDB();
+  const cur = currentUserId();
+  box.innerHTML = Object.values(db.users).filter(u => u.id !== cur).slice(0, 5).map(u => '<button class="switch-btn" data-sw="' + u.id + '"><span>' + esc(u.emoji || '🧑') + '</span><span>' + esc(u.name) + '<br /><small class="muted">' + esc(u.handle || '') + '</small></span></button>').join('') || '<div class="muted small" style="padding:0 12px">No other accounts yet.</div>';
+  $$('#switchList [data-sw]').forEach(b => b.onclick = () => {
+    doContinueAs(b.dataset.sw);
+    $('#accountMenu').hidden = true;
+    renderAll(); refreshAuthUI();
+    toast('Switched to ' + S.user.name + ' — your private space loaded. 🏠', 'ok');
+  });
+}
+function openProfileEditor() {
+  if (requireAuth('edit your profile')) {};
+  if (isGuest()) return;
+  openModal('<h3>Edit profile</h3><p class="muted small">Public to everyone on the shared platform. Wallet & orders stay private.</p>' +
+    '<div class="row2"><label>Name<input id="epName" value="' + esc(S.user.name) + '" /></label><label>Avatar emoji<input id="epEmoji" value="' + esc(S.user.emoji || '🧑‍🚀') + '" maxlength="4" /></label></div>' +
+    '<label>Handle<input id="epHandle" value="' + esc((S.profile || {}).handle || '') + '" placeholder="@ada" /></label>' +
+    '<label>Bio<textarea id="epBio" rows="3">' + esc((S.profile || {}).bio || '') + '</textarea></label>' +
+    '<div class="row2"><label>Location<input id="epLoc" value="' + esc((S.profile || {}).location || '') + '" placeholder="Austin, TX" /></label><label>Website<input id="epWeb" value="' + esc((S.profile || {}).website || '') + '" placeholder="https://" /></label></div>' +
+    '<button class="btn primary block" id="epSave">Save profile →</button>');
+  $('#epSave').onclick = () => {
+    S.user.name = $('#epName').value.trim() || S.user.name;
+    S.user.emoji = $('#epEmoji').value.trim() || S.user.emoji;
+    S.user.avatar = initials(S.user.name);
+    S.profile = S.profile || {};
+    S.profile.handle = $('#epHandle').value.trim() || S.profile.handle;
+    S.profile.bio = $('#epBio').value.trim();
+    S.profile.location = $('#epLoc').value.trim();
+    S.profile.website = $('#epWeb').value.trim();
+    save(); closeModal(); renderAll(); refreshAuthUI();
+    toast('Profile updated — visible to everyone 🌍', 'ok');
+  };
+}
+function renderPeople() {
+  const g = $('#peopleGrid'); if (!g) return;
+  const q = ($('#peopleSearch') || {}).value || '';
+  let list = getPublicProfiles();
+  if (q.trim()) { const s = q.toLowerCase(); list = list.filter(p => (p.name + ' ' + p.handle + ' ' + p.bio).toLowerCase().indexOf(s) >= 0); }
+  const cur = currentUserId();
+  g.innerHTML = list.map(p => {
+    const isMe = p.id === cur;
+    const following = (S.following || []).indexOf(p.id) >= 0 || (S.following || []).indexOf(p.name) >= 0;
+    const followerCount = followerCountFor(p.id, p.name);
+    return '<div class="person-card"><div class="person-cover" style="background:' + esc(p.cover || 'linear-gradient(135deg,#7c3aed,#0ea5e9)') + '"></div>' +
+      '<div class="person-body"><div class="person-row"><div class="person-ava">' + esc(p.emoji || '🧑') + '</div>' +
+      '<div class="grow"><b>' + esc(p.name) + ' ' + (p.verified ? '<span class="tag ok">✓</span>' : '') + '</b><span>' + esc(p.handle || '') + ' • 👥 ' + followerCount + '</span></div></div>' +
+      '<div class="muted small">' + esc((p.bio || '').slice(0, 110)) + '</div>' +
+      '<div class="muted small">🛍 ' + p.listings + ' listings • 📦 ' + p.orders + ' orders • 🏆 ' + (p.points || 0) + ' pts</div>' +
+      '<div style="display:flex;gap:8px"><button class="btn small" style="flex:1" data-vp="' + p.id + '">View profile</button>' +
+      (isMe ? '<span class="tag info">you</span>' : '<button class="btn small ' + (following ? '' : 'primary') + '" data-fol="' + p.id + '">' + (following ? 'Following ✓' : '＋ Follow') + '</button>') + '</div></div></div>';
+  }).join('') || '<div class="card">No people match.</div>';
+  $$('#peopleGrid [data-vp]').forEach(b => b.onclick = () => { S.viewProfileId = b.dataset.vp; save(); nav('profile'); });
+  $$('#peopleGrid [data-fol]').forEach(b => b.onclick = () => { toggleFollow(b.dataset.fol); renderPeople(); });
+}
+function followerCountFor(uid, name) {
+  // followers = how many user DB privates follow this id OR legacy name-follow; plus pseudo base
+  try {
+    const db = getUsersDB();
+    let n = 0;
+    Object.values(db.users).forEach(u => { const f = (u.private && u.private.following) || []; if (f.indexOf(uid) >= 0 || (name && f.indexOf(name) >= 0)) n++; });
+    const base = { u_maya: 214, u_alex: 320, u_priya: 410, u_jordan: 180 }[uid] || 12;
+    return base + n;
+  } catch (e) { return 0; }
+}
+function toggleFollow(targetId) {
+  if (!requireAuth('follow people')) return false;
+  const db = getUsersDB();
+  const t = db.users[targetId];
+  const label = t ? t.name : targetId;
+  S.following = S.following || [];
+  let on = false;
+  [targetId, label].forEach(k => {
+    const i = S.following.indexOf(k);
+    if (i >= 0) { S.following.splice(i, 1); } else { S.following.push(k); on = true; }
+  });
+  // normalize: keep single entry
+  S.following = Array.from(new Set(S.following)).filter(x => x !== targetId || on).filter(x => x !== label || on);
+  if (on && S.following.indexOf(targetId) < 0) S.following.push(targetId);
+  if (!on) S.following = S.following.filter(x => x !== targetId && x !== label);
+  save(); persistCurrentUser();
+  toast(on ? 'Following ' + label + ' ✓' : 'Unfollowed ' + label, on ? 'ok' : undefined);
+  return on;
+}
+function renderProfile(viewId) {
+  const db = getUsersDB();
+  const cur = currentUserId();
+  const id = viewId || cur;
+  const isMe = !isGuest() && id === cur;
+  let data;
+  if (isMe || db.users[id]) {
+    if (isMe) data = { id: cur, name: S.user.name, handle: (S.profile || {}).handle, bio: (S.profile || {}).bio, emoji: S.user.emoji, cover: (S.profile || {}).cover, verified: !!((S.profile || {}).verified), location: (S.profile || {}).location, website: (S.profile || {}).website, email: S.user.email, memberSince: S.user.memberSince };
+    else { const u = db.users[id]; const pv = (u.private || {}); data = { id: u.id, name: u.name, handle: u.handle, bio: u.bio, emoji: u.emoji, cover: u.cover, verified: u.verified, location: (pv.profile || {}).location || '', website: (pv.profile || {}).website || '', memberSince: (pv.user || {}).memberSince || '2026', privateView: pv }; }
+  } else if (isGuest()) {
+    data = { id: 'guest', name: 'Guest', handle: '@guest', bio: 'Log in to claim your profile.', emoji: '👤', cover: 'linear-gradient(135deg,#444,#888)', verified: false };
+  } else return;
+  const pc = $('#profileCover'); if (pc) pc.style.background = data.cover || 'linear-gradient(135deg,#7c3aed,#0ea5e9)';
+  const pa = $('#profileAvatar'); if (pa) pa.textContent = data.emoji || '🧑‍🚀';
+  const pn = $('#profileName'); if (pn) pn.innerHTML = esc(data.name) + (data.verified ? ' <span class="tag ok">✓ Verified</span>' : '');
+  const ph = $('#profileHandle'); if (ph) ph.textContent = (data.handle || '') + (data.location ? ' • ' + data.location : '') + ' • Joined ' + (data.memberSince || '2026');
+  const pb = $('#profileBio'); if (pb) pb.innerHTML = esc(data.bio || '') + (data.website ? ' • <a href="' + esc(data.website) + '" target="_blank" rel="noopener">' + esc(data.website) + '</a>' : '') + (isMe ? ' • <span class="tag info">private wallet: ' + ec(S.user.balance) + '</span>' : '');
+  const myListings = (S.products || []).filter(p => !p.paused && data.name && p.seller && (p.seller === data.name || p.seller.indexOf(data.name.split(' ')[0]) === 0));
+  const listingsCount = isMe ? (S.products || []).filter(p => p.mine).length + myListings.filter(p => !p.mine).length : myListings.length;
+  if ($('#stListings')) $('#stListings').textContent = isMe ? (S.products.filter(p => p.mine).length || listingsCount) : listingsCount;
+  if ($('#stFollowers')) $('#stFollowers').textContent = followerCountFor(data.id, data.name);
+  if ($('#stFollowing')) $('#stFollowing').textContent = isMe ? (S.following || []).length : ((data.privateView && data.privateView.following || []).length);
+  if ($('#stPoints')) $('#stPoints').textContent = isMe ? (S.points || 0) : ((data.privateView && data.privateView.points) || 0);
+  if ($('#stOrders')) $('#stOrders').textContent = isMe ? (S.orders || []).length : ((data.privateView && data.privateView.orders || []).length);
+  const fb = $('#followProfileBtn');
+  if (fb) {
+    if (isMe || isGuest()) fb.hidden = true;
+    else {
+      fb.hidden = false;
+      const on = (S.following || []).indexOf(data.id) >= 0;
+      fb.textContent = on ? 'Following ✓' : '＋ Follow';
+      fb.onclick = () => { toggleFollow(data.id); renderProfile(data.id); };
+    }
+  }
+  const eb = $('#editProfileBtn'); if (eb) { eb.style.display = isMe ? '' : 'none'; eb.onclick = openProfileEditor; }
+  const sb = $('#shareProfileBtn'); if (sb) sb.onclick = () => { try { navigator.clipboard.writeText(location.origin + location.pathname + '#/profile'); } catch (e) {} toast('Profile link copied 🔗', 'ok'); };
+  const tab = S.profileTab || 'listings';
+  $$('#profileTabs button').forEach(b => { b.classList.toggle('active', b.dataset.pt === tab); b.onclick = () => { S.profileTab = b.dataset.pt; save(); renderProfile(data.id); }; });
+  const box = $('#profileContent'); if (!box) return;
+  if (tab === 'about') {
+    box.innerHTML = '<div class="list-row"><div class="grow"><b>Handle</b><span>' + esc(data.handle || '') + '</span></div></div>' +
+      '<div class="list-row"><div class="grow"><b>Bio</b><span>' + esc(data.bio || '—') + '</span></div></div>' +
+      '<div class="list-row"><div class="grow"><b>Location</b><span>' + esc(data.location || '—') + '</span></div></div>' +
+      (isMe ? '<div class="list-row"><div class="grow"><b>Email (private)</b><span>' + esc(S.user.email) + '</span></div></div><div class="list-row"><div class="grow"><b>Wallet (private)</b><span>' + ec(S.user.balance) + ' • only you see this</span></div><span class="tag ok">🔒 private</span></div>' : '<p class="muted small">🔒 Wallet, cart & orders are private — you are viewing their public profile, like Instagram.</p>');
+  } else if (tab === 'posts') {
+    const mine = (S.posts || []).filter(p => p.author === data.name);
+    box.innerHTML = mine.map(p => '<div class="list-row"><div class="grow"><b>' + esc(p.title) + '</b><span>♥ ' + p.likes + ' • 💬 ' + p.comments.length + ' • ' + esc(p.time) + '</span></div></div>').join('') || '<div class="muted">No posts yet.</div>';
+  } else {
+    const items = isMe ? (S.products || []).filter(p => p.mine) : myListings;
+    box.innerHTML = items.map(p => '<div class="list-row"><div class="thumb">' + imgHTML(p) + '</div><div class="grow"><b>' + esc(p.title) + '</b><span>' + money(p.price) + ' • ★ ' + p.rating + '</span></div><button class="btn small" data-pp-v="' + p.id + '">View</button></div>').join('') || '<div class="muted">No listings yet.</div>';
+    $$('#profileContent [data-pp-v]').forEach(b => b.onclick = () => viewProduct(b.dataset.ppV));
+  }
+}
+window.openProfile = (id) => { S.viewProfileId = id; save(); nav('profile'); };
+
 /* ---------- events wiring ---------- */
 function wire() {
   $('#mobileMenuBtn').onclick = () => $('#mainNav').classList.toggle('open');
@@ -1511,9 +1866,30 @@ function wire() {
   $('#notifBtn').onclick = openNotif;
   $('#closeNotif').onclick = closeNotif;
   $('#clearNotif').onclick = () => { S.notifs.forEach(n => n.read = true); save(); renderNotifs(); renderNotifBadge(); };
-  $('#overlay').onclick = () => { closeCart(); closeNotif(); closeModal(); };
-  $('#userBtn').onclick = profileModal;
-  $('#checkoutBtn').onclick = startCheckout;
+  $('#overlay').onclick = () => { closeCart(); closeNotif(); closeModal(); const am = $('#accountMenu'); if (am) am.hidden = true; };
+  $('#userBtn').onclick = (e) => { e.stopPropagation(); if (isGuest()) { openAuth('login', 'Log in to open your profile.'); return; } const am = $('#accountMenu'); if (am) { am.hidden = !am.hidden; if (!am.hidden) refreshAuthUI(); } };
+  document.addEventListener('click', e => { const am = $('#accountMenu'); if (am && !am.hidden && !e.target.closest('.account-wrap')) am.hidden = true; });
+  const loginTopBtn = $('#loginBtn'); if (loginTopBtn) loginTopBtn.onclick = () => openAuth('login');
+  const lob = $('#logoutBtn'); if (lob) lob.onclick = () => { doLogout(); const am = $('#accountMenu'); if (am) am.hidden = true; renderAll(); refreshAuthUI(); openAuth('login', 'Logged out. Log in or continue as guest.'); };
+  $$('#authTabs button').forEach(b => b.onclick = () => switchAuthTab(b.dataset.at));
+  const dli = $('#doLoginBtn'); if (dli) dli.onclick = () => {
+    const r = doLogin($('#loginEmail').value, $('#loginPw').value);
+    if (!r.ok) { $('#loginErr').textContent = r.err; return; }
+    $('#loginErr').textContent = ''; closeAuth(); renderAll(); refreshAuthUI(); toast('Welcome back, ' + S.user.name.split(' ')[0] + '! 👋', 'ok'); nav('marketplace');
+  };
+  const dsu = $('#doSignupBtn'); if (dsu) dsu.onclick = () => {
+    const r = doSignup($('#suName').value, $('#suEmail').value, $('#suPw').value);
+    if (!r.ok) { $('#suErr').textContent = r.err; return; }
+    $('#suErr').textContent = ''; closeAuth(); renderAll(); refreshAuthUI(); toast('Account created — 750 EC + your private space 🎉', 'ok'); nav('profile');
+  };
+  const gb = $('#guestBtn'); if (gb) gb.onclick = () => { persistCurrentUser(); setSessionId('guest'); const g = defaultPrivate('Guest', ''); g.user.balance = 0; PRIVATE_KEYS.forEach(k => { if (g[k] !== undefined) S[k] = g[k]; }); S.user.name = 'Guest'; _baseSave(); closeAuth(); renderAll(); refreshAuthUI(); toast('Browsing as guest 👀 — log in to buy, sell & save.', undefined); };
+  const ps = $('#peopleSearch'); if (ps && !ps.dataset.b) { ps.dataset.b = '1'; ps.addEventListener('input', () => renderPeople()); }
+  const ecb = $('#editCoverBtn'); if (ecb) ecb.onclick = () => {
+    if (!requireAuth('change your cover')) return;
+    const covers = ['linear-gradient(135deg,#7c3aed,#0ea5e9)', 'linear-gradient(135deg,#db2777,#f59e0b)', 'linear-gradient(135deg,#059669,#22d3ee)', 'linear-gradient(135deg,#111,#555)'];
+    S.profile.cover = covers[(covers.indexOf(S.profile.cover) + 1) % covers.length]; save(); renderProfile(currentUserId());
+  };
+  $('#checkoutBtn').onclick = () => { if (!requireAuth('check out')) return; startCheckout(); };
   $('#couponBtn').onclick = () => applyCoupon($('#couponInput').value);
   const hint = $('#couponApplyHint'); if (hint) hint.onclick = () => { $('#couponInput').value = 'EMPOWER10'; applyCoupon('EMPOWER10'); openCart(); };
   $('#sortSelect').onchange = e => { S.sort = e.target.value; save(); renderMarket(); };
@@ -1551,6 +1927,7 @@ function wire() {
   const gs = $('#gigSort'); if (gs) gs.onchange = renderServices;
   const ff = $('#feedFilter'); if (ff) ff.onchange = renderCommunity;
   const pb = $('#postBtn'); if (pb) pb.onclick = () => {
+    if (!requireAuth('post to the shared community')) return;
     const t = ($('#postTitle').value || '').trim(), b = ($('#postBody').value || '').trim();
     if (!t || !b) { toast('Add a title + story', 'err'); return; }
     S.posts.unshift({ id: 'f' + Date.now(), author: S.user.name, role: 'Member', av: S.user.emoji || '🧑‍🚀', topic: $('#postTopic').value, title: t, text: b, likes: 0, liked: false, time: 'now', comments: [] });
@@ -1579,6 +1956,7 @@ function wire() {
   });
   sf.onsubmit = e => {
     e.preventDefault();
+    if (!requireAuth('sell on the shared marketplace')) return;
     const f = new FormData(sf);
     const title = String(f.get('title') || '').trim();
     const price = Number(f.get('price'));
@@ -1709,7 +2087,7 @@ function wire() {
     openModal('<h3>＋ New task</h3><input id="taskIn" placeholder="e.g. Shoot product photos" /><button class="btn primary block" id="taskGo" style="margin-top:8px">Add task</button>');
     $('#taskGo').onclick = () => { const v = $('#taskIn').value.trim(); if (!v) return; S.tasks.push(v); save(); closeModal(); renderDashboard(); toast('Task added ✓', 'ok'); };
   };
-  const lb = $('#liveShopBtn'); if (lb) lb.onclick = liveShopModal;
+  const liveBtn = $('#liveShopBtn'); if (liveBtn) liveBtn.onclick = liveShopModal;
   const ac2 = $('#affCopy'); if (ac2) ac2.onclick = () => { const link = location.origin + location.pathname + '?ref=' + ((S.affiliate || {}).code || 'JORDAN10'); try { navigator.clipboard.writeText(link); } catch (e) {} S.affiliate.clicks++; save(); renderWallet(); toast('Affiliate link copied 🔗', 'ok'); };
   const as2 = $('#affSim'); if (as2) as2.onclick = () => { S.affiliate.earned += 2; S.user.balance += 2; S.txs.unshift({ t: 'Affiliate payout', a: 2, d: today(), k: 'in' }); save(); renderWallet(); updateWalletUI(); toast('+$2 affiliate payout 🎉', 'ok'); };
   const asub = $('#addSubBtn'); if (asub) asub.onclick = () => {
@@ -1786,6 +2164,8 @@ function tickAuctionTimes() {
 function renderAll() {
   applyTheme(); syncPlus();
   renderMarket(); renderDeals(); renderAuctions(); renderServices(); renderLearn(); renderEvents(); renderCoaches(); renderCommunity(); renderInbox(); renderRewards(); renderSell(); renderWallet(); renderOrders(); renderDashboard(); renderWishlist(); renderNotifBadge(); renderInboxBadge(); renderSettings();
+  try { renderPeople(); } catch (e) {}
+  try { renderProfile(S.viewProfileId || currentUserId()); } catch (e) {}
   const h = (location.hash || '').replace('#/', '').split('?')[0];
   if (h && VIEWS.indexOf(h) >= 0 && h !== 'marketplace') nav(h);
   // auction bid modal helper: allow deep link ?item=
@@ -1794,8 +2174,11 @@ function renderAll() {
     if (m) { const p = S.products.find(x => x.id === m[1]); if (p) viewProduct(p.id); }
   } catch (e) {}
 }
+try { ensureDemoUsers(); } catch (e) { console.warn('auth init', e); }
+if (!S.profile) S.profile = { handle: '@' + (S.user.name || 'user').split(' ')[0].toLowerCase(), bio: '', cover: 'linear-gradient(135deg,#7c3aed,#0ea5e9)', verified: false };
 wire();
 renderAll();
+refreshAuthUI();
 maybeOnboard();
 liveSim();
 setInterval(tickDeals, 1000);

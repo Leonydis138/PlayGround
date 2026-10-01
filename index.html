@@ -44,7 +44,22 @@
       <button class="icon-btn" id="notifBtn" aria-label="Notifications">🔔<em id="notifCount" hidden>0</em></button>
       <button class="icon-btn" id="wishBtn" data-nav="wishlist" aria-label="Wishlist">♥<em id="wishCount" hidden>0</em></button>
       <button class="icon-btn cart-btn" id="cartBtn" aria-label="Cart">🛒<em id="cartCount">0</em></button>
-      <button class="avatar-btn" id="userBtn" aria-label="Account">JD</button>
+      <button class="btn primary small" id="loginBtn" hidden>Log in</button>
+      <div class="account-wrap">
+        <button class="avatar-btn" id="userBtn" aria-label="Account">JD</button>
+        <div class="account-menu" id="accountMenu" hidden>
+          <div class="account-head"><div class="avatar-btn" id="accountAvatar">JD</div><div><b id="accountName">Jordan Doe</b><div class="muted small" id="accountHandle">@jordan • 750 EC</div></div></div>
+          <button data-nav="profile">👤 My profile</button>
+          <button data-nav="people">👥 Find people</button>
+          <button data-nav="wallet">◉ Wallet</button>
+          <button data-nav="settings">⚙️ Settings</button>
+          <hr />
+          <div class="muted small" style="padding:0 12px 4px">Switch account</div>
+          <div id="switchList"></div>
+          <hr />
+          <button id="logoutBtn">🚪 Log out</button>
+        </div>
+      </div>
     </div>
   </div>
   <nav class="mainnav grouped" id="mainNav" aria-label="Primary">
@@ -62,6 +77,8 @@
       <button data-nav="dashboard">📊 Dashboard</button>
     </div></div>
     <div class="nav-group"><span class="nav-label">Connect</span><div class="nav-row">
+      <button data-nav="people">👥 People</button>
+      <button data-nav="profile">👤 Profile</button>
       <button data-nav="coaches">🎓 Coaches</button>
       <button data-nav="community">💬 Community</button>
       <button data-nav="inbox">✉️ Inbox</button>
@@ -339,6 +356,31 @@
     <div class="card"><div class="card-head"><h3>🛡️ Resolution center</h3><button class="btn small" id="newDisputeBtn">＋ Open dispute</button></div><div id="disputeList"></div></div>
   </section>
 
+  <!-- PEOPLE: shared directory, like FB friends / IG discover -->
+  <section class="view" id="view-people">
+    <div class="page-head"><div><h2>👥 People on Empower</h2><p>Everyone shares the same marketplace — follow sellers, coaches & friends. Click anyone for their public profile.</p></div>
+      <div class="page-head-actions"><input id="peopleSearch" placeholder="Search name, handle, bio…" style="min-width:220px" /></div></div>
+    <div class="grid" id="peopleGrid"></div>
+  </section>
+
+  <!-- PROFILE: facebook/instagram-style, private wallet hidden from others -->
+  <section class="view" id="view-profile">
+    <div class="profile-cover" id="profileCover"><button class="btn small" id="editCoverBtn">🎨 Cover</button></div>
+    <div class="card profile-card">
+      <div class="profile-top">
+        <div class="profile-avatar" id="profileAvatar">🧑‍🚀</div>
+        <div class="grow"><h2 id="profileName" style="margin:0">Jordan Doe</h2>
+          <div class="muted" id="profileHandle">@jordan • Joined 2025</div>
+          <div id="profileBio" class="muted small">Bio…</div>
+        </div>
+        <div class="profile-actions"><button class="btn small primary" id="editProfileBtn">Edit profile</button><button class="btn small" id="shareProfileBtn">🔗 Share</button><button class="btn small" id="followProfileBtn" hidden>＋ Follow</button></div>
+      </div>
+      <div class="profile-stats"><div><b id="stListings">0</b><span>Listings</span></div><div><b id="stFollowers">0</b><span>Followers</span></div><div><b id="stFollowing">0</b><span>Following</span></div><div><b id="stPoints">0</b><span>Points</span></div><div><b id="stOrders">0</b><span>Orders</span></div></div>
+    </div>
+    <div class="tabs" id="profileTabs"><button data-pt="listings" class="active">🛍 Listings</button><button data-pt="posts">💬 Posts</button><button data-pt="about">ℹ️ About</button></div>
+    <div class="card"><div id="profileContent"></div></div>
+  </section>
+
   <!-- REWARDS -->
   <section class="view" id="view-rewards">
     <div class="page-head"><div><h2>🏆 Rewards & Streaks</h2><p>Earn points for buying, selling, learning & helping. Redeem for EC.</p></div>
@@ -438,6 +480,32 @@
   </div>
   <div class="foot-base muted small"><span>Seller protection • Escrow • Verified coaches • 2-day payouts</span><span>v4.0 • press <b>Ctrl+K</b> for commands • <b>/</b> to search</span></div>
 </footer>
+
+<!-- AUTH: login / signup / guest — one shared platform, private profiles -->
+<div class="auth-screen" id="authScreen" hidden>
+  <div class="auth-card">
+    <div class="brand" style="justify-content:center"><span class="brand-mark">E</span><span class="brand-text">Empower<small>one platform • your profile</small></span></div>
+    <p class="muted small" style="text-align:center">🛍 Marketplace + 🎓 Coaching + 💬 Community — shared by everyone.<br />🔐 Wallet, cart & orders are <b>private to you</b>, like PayPal + Instagram in one.</p>
+    <div class="tabs" id="authTabs"><button data-at="login" class="active">Log in</button><button data-at="signup">Sign up</button></div>
+    <div id="authLogin">
+      <label>Email<input id="loginEmail" type="email" placeholder="you@email.com" /></label>
+      <label>Password<input id="loginPw" type="password" placeholder="••••••" /></label>
+      <div class="muted small" id="loginErr" style="color:var(--red)"></div>
+      <button class="btn primary block" id="doLoginBtn">Log in →</button>
+    </div>
+    <div id="authSignup" hidden>
+      <label>Name<input id="suName" placeholder="Ada Lovelace" /></label>
+      <label>Email<input id="suEmail" type="email" placeholder="you@email.com" /></label>
+      <label>Password (6+ chars)<input id="suPw" type="password" placeholder="••••••" /></label>
+      <div class="muted small" id="suErr" style="color:var(--red)"></div>
+      <button class="btn primary block" id="doSignupBtn">Create account + 750 EC 🎉</button>
+    </div>
+    <div class="muted small" style="text-align:center;margin:8px 0">— or —</div>
+    <div class="demo-logins" id="demoLogins"></div>
+    <button class="btn block" id="guestBtn">👀 Continue as guest (browse only)</button>
+    <p class="muted small" style="text-align:center">Demo passwords: <b>empower123</b> • Stored locally in your browser only.</p>
+  </div>
+</div>
 
 <div class="overlay" id="overlay"></div>
 <aside class="drawer" id="cartDrawer" aria-label="Cart">
