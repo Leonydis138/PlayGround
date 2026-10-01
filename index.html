@@ -4,14 +4,22 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>Empower — Buy, Sell & Get Coached | Virtual Economic Platform</title>
-<meta name="description" content="Empower is the virtual economy for goods + coaching. Shop verified sellers, sell in 60 seconds, book vetted coaches, get paid in Empower Credits." />
+<meta name="description" content="Empower is the virtual economy for goods + coaching. Shop verified sellers, flash deals, live auctions, hire freelancers, take courses, get coached — one wallet." />
+<meta property="og:title" content="Empower — Buy, Sell & Get Coached" />
+<meta property="og:description" content="Marketplace + deals + auctions + services + courses + coaching. 1 EC = $1, escrow protected." />
+<meta property="og:type" content="website" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet" />
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='22' fill='%237c3aed'/><text x='50' y='70' font-size='54' text-anchor='middle' fill='white' font-family='Arial' font-weight='bold'>E</text></svg>" />
 <link rel="stylesheet" href="styles.css" />
 <link rel="manifest" href="manifest.json" />
 <meta name="theme-color" content="#0b0b14" />
 </head>
 <body>
+<a class="skip-link" href="#app">Skip to content</a>
 <div id="bg-blobs" aria-hidden="true"><span></span><span></span><span></span></div>
+<div class="promo-bar" id="promoBar">⚡ Flash deals end in <b id="promoTimer">--:--:--</b> · Code <button class="linklike" id="promoCoupon">EMPOWER10</button> for 10% off · <button class="linklike" id="promoPlus">Try Plus free →</button></div>
 
 <header class="topbar">
   <div class="topbar-inner">
@@ -22,7 +30,8 @@
     </a>
     <div class="search-wrap">
       <span class="search-ico">⌕</span>
-      <input id="globalSearch" type="search" placeholder="Search products, coaches, skills…  ( press / )" autocomplete="off" />
+      <input id="globalSearch" type="search" placeholder="Search products, gigs, coaches…  ( / to focus · ⌘K for commands )" autocomplete="off" />
+      <kbd class="kbd">⌘K</kbd>
       <div class="search-drop" id="searchDrop" hidden></div>
     </div>
     <div class="top-actions">
@@ -41,16 +50,21 @@
   <nav class="mainnav" id="mainNav">
     <button data-nav="marketplace" class="active">🛍 Marketplace</button>
     <button data-nav="deals">🔥 Deals</button>
+    <button data-nav="auctions">🔨 Auctions</button>
     <button data-nav="services">🛠️ Services</button>
     <button data-nav="learn">🎬 Learn</button>
+    <button data-nav="live">📡 Live</button>
     <button data-nav="coaches">🎓 Coaches</button>
+    <button data-nav="stores">🏪 Stores</button>
     <button data-nav="community">💬 Community</button>
     <button data-nav="sell">＋ Sell</button>
     <button data-nav="become-coach">★ Become a Coach</button>
     <button data-nav="dashboard">📊 Dashboard</button>
     <button data-nav="orders">📦 Orders</button>
     <button data-nav="inbox">✉️ Inbox</button>
+    <button data-nav="rewards">🏆 Rewards</button>
     <button data-nav="wishlist">♥ Wishlist</button>
+    <button data-nav="settings">⚙️ Settings</button>
     <button data-nav="wallet">◉ Wallet</button>
   </nav>
 </header>
@@ -154,6 +168,79 @@
       <button class="btn primary" id="matchBtn">✨ Match me</button>
     </div>
     <div class="grid coaches" id="coachGrid"></div>
+  </section>
+
+  <!-- AUCTIONS -->
+  <section class="view" id="view-auctions">
+    <div class="page-head"><div><h2>Live auctions 🔨</h2><p>No reserve games. Highest bid at zero wins — escrow holds the bid until you win.</p></div>
+      <div class="page-head-actions"><span class="fee-chip" id="auctionCount">0 live</span><button class="btn primary" id="startAuctionBtn">＋ List an auction</button></div></div>
+    <div class="toolbar card-flat"><div class="pills" id="auctionPills"></div>
+      <div class="toolbar-right"><select id="auctionSort"><option value="ending">Ending soon</option><option value="bids">Most bids</option><option value="price-asc">Bid ↑</option><option value="price-desc">Bid ↓</option></select>
+      <label class="check"><input type="checkbox" id="auctionWatchToggle" /> Watched only</label></div></div>
+    <div class="grid" id="auctionGrid"></div>
+  </section>
+
+  <!-- LIVE EVENTS -->
+  <section class="view" id="view-live">
+    <div class="page-head"><div><h2>Live shopping & workshops 📡</h2><p>Drop into live sales, demos and AMAs. RSVP free or with EC — replays included.</p></div>
+      <div class="page-head-actions"><div class="tabs" id="liveTabs"><button data-lv="all" class="active">All</button><button data-lv="shopping">Shopping</button><button data-lv="workshop">Workshops</button><button data-lv="ama">AMAs</button></div></div></div>
+    <div class="live-now card" id="liveNowBox"></div>
+    <div class="grid" id="liveGrid"></div>
+  </section>
+
+  <!-- STORES -->
+  <section class="view" id="view-stores">
+    <div class="page-head"><div><h2>Top stores 🏪</h2><p>Follow stores for restock alerts and subscriber-only deals.</p></div>
+      <div class="page-head-actions"><select id="storeSort"><option value="sold">Most sold</option><option value="rating">Top rated</option><option value="items">Most listings</option></select></div></div>
+    <div class="grid" id="storeGrid"></div>
+  </section>
+
+  <!-- REWARDS -->
+  <section class="view" id="view-rewards">
+    <div class="page-head"><div><h2>Rewards 🏆</h2><p>Earn XP for everything — redeem 100 XP = 5 EC. Keep the streak alive.</p></div>
+      <div class="page-head-actions"><span class="fee-chip" id="streakChip">🔥 0-day streak</span></div></div>
+    <div class="split">
+      <div class="card level-card">
+        <div class="level-ring"><span id="levelEmoji">🥉</span></div>
+        <div><b id="levelName">Bronze • Level 1</b><div class="muted small" id="xpLabel">0 XP</div></div>
+        <div class="bar"><i id="xpBar" style="width:0%"></i></div>
+        <div class="muted small" id="xpNext"></div>
+        <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap"><button class="btn primary small" id="redeemXpBtn">Redeem 100 XP → 5 EC</button><button class="btn small" id="spinBtn">🎡 Daily spin</button></div>
+        <div id="badgeRow" class="badge-row"></div>
+      </div>
+      <div class="card"><h3>🏅 Leaderboard</h3><div id="leaderList"></div></div>
+    </div>
+    <div class="card"><h3>Quests — earn XP today</h3><div id="questList"></div></div>
+  </section>
+
+  <!-- SETTINGS -->
+  <section class="view" id="view-settings">
+    <div class="page-head"><div><h2>Settings ⚙️</h2><p>Profile, money, notifications, data — all yours.</p></div></div>
+    <div class="split">
+      <div>
+        <div class="card"><h3>Profile</h3>
+          <div class="row2"><label>Name<input id="setName" /></label><label>Avatar emoji<input id="setEmoji" maxlength="4" /></label></div>
+          <label>Email<input id="setEmail" /></label>
+          <label>Default address<input id="setAddr" /></label>
+          <button class="btn primary" id="setSave">Save profile</button>
+        </div>
+        <div class="card"><h3>Money</h3>
+          <div class="row2"><label>Currency<select id="setCurrency"><option value="USD">USD $</option><option value="EUR">EUR €</option><option value="GBP">GBP £</option></select></label>
+          <label>Theme<select id="setTheme"><option value="dark">Dark</option><option value="light">Light</option></select></label></div>
+          <div class="pay-methods" id="payList"></div>
+          <div style="display:flex;gap:8px;margin-top:8px"><input id="newPay" placeholder="＋ Add card •• 1234" /><button class="btn small" id="addPayBtn">Add</button></div>
+        </div>
+      </div>
+      <div>
+        <div class="card"><h3>Notifications</h3><div id="notifPrefs"></div></div>
+        <div class="card"><h3>Addresses</h3><div id="addrList"></div>
+          <div style="display:flex;gap:8px;margin-top:8px"><input id="newAddr" placeholder="Street, city, ZIP" /><button class="btn small" id="addAddrBtn">Add</button></div></div>
+        <div class="card danger-zone"><h3>Data</h3>
+          <div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn small" id="exportJsonBtn">⬇ Export all data (JSON)</button><button class="btn small" id="importJsonBtn">⬆ Import</button><input type="file" id="importFile" accept=".json" hidden /><button class="btn small danger" id="wipeBtn">Wipe everything</button></div>
+          <p class="muted small">Empower is local-first: your data lives in this browser. Export before switching devices.</p>
+        </div>
+      </div>
+    </div>
   </section>
 
   <!-- SELL -->
@@ -332,8 +419,8 @@
   <div class="foot-grid">
     <div><div class="brand"><span class="brand-mark sm">E</span><b>Empower</b></div>
       <p class="muted small">The virtual economy for goods + coaching.<br />Demo build • data stored locally in your browser.</p></div>
-    <div><b>Marketplace</b><a href="#/marketplace" data-nav="marketplace">Browse</a><a href="#/deals" data-nav="deals">Flash deals</a><a href="#/services" data-nav="services">Hire services</a><a href="#/learn" data-nav="learn">Courses</a><a href="#/sell" data-nav="sell">Sell an item</a><a href="#/wishlist" data-nav="wishlist">Wishlist</a></div>
-    <div><b>Coaching</b><a href="#/coaches" data-nav="coaches">Find a coach</a><a href="#/become-coach" data-nav="become-coach">Become a coach</a><a href="#/community" data-nav="community">Community</a><a href="#/inbox" data-nav="inbox">Inbox & disputes</a></div>
+    <div><b>Marketplace</b><a href="#/marketplace" data-nav="marketplace">Browse</a><a href="#/deals" data-nav="deals">Flash deals</a><a href="#/auctions" data-nav="auctions">Auctions</a><a href="#/services" data-nav="services">Hire services</a><a href="#/learn" data-nav="learn">Courses</a><a href="#/live" data-nav="live">Live events</a><a href="#/stores" data-nav="stores">Stores</a><a href="#/sell" data-nav="sell">Sell an item</a><a href="#/wishlist" data-nav="wishlist">Wishlist</a></div>
+    <div><b>Coaching</b><a href="#/coaches" data-nav="coaches">Find a coach</a><a href="#/become-coach" data-nav="become-coach">Become a coach</a><a href="#/community" data-nav="community">Community</a><a href="#/inbox" data-nav="inbox">Inbox & disputes</a><a href="#/rewards" data-nav="rewards">Rewards</a><a href="#/settings" data-nav="settings">Settings</a></div>
     <div><b>Trust</b><a href="#" id="footEscrow">Escrow & returns</a><a href="#" id="footFees">Fees</a><a href="#" id="footHelp">Help center</a></div>
   </div>
   <div class="foot-base muted small"><span>Seller protection • Escrow • Verified coaches • 2-day payouts</span><span>v3.0 expanded</span></div>
@@ -363,6 +450,37 @@
 <div class="modal-root" id="modalRoot"></div>
 <div class="toast-root" id="toastRoot"></div>
 
+  <div class="foot-base muted small"><span>Seller protection • Escrow • Verified coaches • 2-day payouts</span><span>v4.0 expanded • <button class="linklike" id="footTour">Take the tour</button></span></div>
+</footer>
+
+<!-- v4 floating UI -->
+<button class="fab ai-fab" id="aiFab" aria-label="Ask Empower AI">✨<span>AI</span></button>
+<aside class="drawer ai-drawer" id="aiDrawer" aria-label="Empower AI">
+  <div class="drawer-head"><h3>✨ Empower AI <span class="tag ok">concierge</span></h3><button class="icon-btn" id="closeAi">✕</button></div>
+  <div class="drawer-body"><div class="chat" id="aiChat" style="max-height:none;flex:1"></div></div>
+  <div class="drawer-foot"><div class="ai-chips" id="aiChips"></div>
+    <div style="display:flex;gap:8px"><input id="aiInput" placeholder="e.g. gift under $50 for a designer…" /><button class="btn primary" id="aiSend">Ask</button></div></div>
+</aside>
+
+<div class="palette-root" id="paletteRoot" hidden>
+  <div class="palette"><input id="paletteInput" placeholder="Type a command or search…  (esc to close)" autocomplete="off" />
+  <div id="paletteList"></div></div>
+</div>
+
+<nav class="bottomnav" id="bottomNav">
+  <button data-nav="marketplace">🛍<small>Shop</small></button>
+  <button data-nav="auctions">🔨<small>Bids</small></button>
+  <button data-nav="sell">＋<small>Sell</small></button>
+  <button data-nav="inbox">✉️<small>Inbox</small></button>
+  <button data-nav="wallet">◉<small>Wallet</small></button>
+</nav>
+
+<div class="tour-root" id="tourRoot" hidden><div class="tour-card"><b id="tourTitle"></b><p id="tourText" class="muted small"></p>
+  <div style="display:flex;gap:8px;justify-content:space-between"><button class="btn small" id="tourSkip">Skip</button><button class="btn small primary" id="tourNext">Next →</button></div></div></div>
+
+<div class="compare-bar" id="compareBar" hidden><span id="compareLabel"></span><button class="btn small primary" id="compareGo">Compare →</button><button class="btn small" id="compareClear">Clear</button></div>
+
 <script src="app.js"></script>
+<script src="v4.js"></script>
 </body>
 </html>
