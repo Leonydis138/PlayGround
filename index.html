@@ -3,9 +3,9 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Empower — Virtual Economic Platform | Buy, Sell, Coach</title>
-<meta name="description" content="Empower is a virtual economic platform where users can sell goods, buy goods, become coaches, book coaching, and grow income." />
-<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='22' fill='%236d28d9'/><text x='50' y='68' font-size='52' text-anchor='middle' fill='white' font-family='Arial' font-weight='bold'>E</text></svg>" />
+<title>Empower — Buy, Sell & Get Coached | Virtual Economic Platform</title>
+<meta name="description" content="Empower is the virtual economy for goods + coaching. Shop verified sellers, sell in 60 seconds, book vetted coaches, get paid in Empower Credits." />
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='22' fill='%237c3aed'/><text x='50' y='70' font-size='54' text-anchor='middle' fill='white' font-family='Arial' font-weight='bold'>E</text></svg>" />
 <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
@@ -14,18 +14,21 @@
 <header class="topbar">
   <div class="topbar-inner">
     <button class="icon-btn mobile-menu" id="mobileMenuBtn" aria-label="Menu">☰</button>
-    <a class="brand" href="#" data-nav="marketplace">
+    <a class="brand" href="#/marketplace" data-nav="marketplace">
       <span class="brand-mark">E</span>
       <span class="brand-text">Empower<small>virtual economy</small></span>
     </a>
     <div class="search-wrap">
       <span class="search-ico">⌕</span>
-      <input id="globalSearch" type="search" placeholder="Search products, coaches, skills…" autocomplete="off" />
+      <input id="globalSearch" type="search" placeholder="Search products, coaches, skills…  ( press / )" autocomplete="off" />
+      <div class="search-drop" id="searchDrop" hidden></div>
     </div>
     <div class="top-actions">
-      <button class="pill-balance" data-nav="wallet" title="Wallet">
+      <button class="pill-balance" data-nav="wallet" title="Wallet — 1 EC = $1">
         <span class="coin">◉</span><span id="walletBalanceTop">1,250 EC</span>
       </button>
+      <button class="icon-btn" id="notifBtn" aria-label="Notifications">🔔<em id="notifCount" hidden>0</em></button>
+      <button class="icon-btn" id="wishBtn" data-nav="wishlist" aria-label="Wishlist">♥<em id="wishCount" hidden>0</em></button>
       <button class="icon-btn cart-btn" id="cartBtn" aria-label="Cart">🛒<em id="cartCount">0</em></button>
       <button class="avatar-btn" id="userBtn" aria-label="Account">JD</button>
     </div>
@@ -33,25 +36,30 @@
   <nav class="mainnav" id="mainNav">
     <button data-nav="marketplace" class="active">🛍 Marketplace</button>
     <button data-nav="coaches">🎓 Coaches</button>
-    <button data-nav="sell">＋ Sell Goods</button>
+    <button data-nav="sell">＋ Sell</button>
     <button data-nav="become-coach">★ Become a Coach</button>
     <button data-nav="dashboard">📊 Dashboard</button>
     <button data-nav="orders">📦 Orders</button>
+    <button data-nav="wishlist">♥ Wishlist</button>
     <button data-nav="wallet">◉ Wallet</button>
   </nav>
 </header>
 
 <main id="app">
-  <!-- HERO + MARKETPLACE -->
+  <!-- MARKETPLACE -->
   <section class="view active" id="view-marketplace">
     <div class="hero">
       <div class="hero-copy">
-        <div class="eyebrow">● LIVE • 12,408 earners online</div>
+        <div class="eyebrow"><span class="pulse"></span> LIVE • <span id="onlineCount">12,408</span> earners online • Escrow protected</div>
         <h1>Buy goods. Sell goods.<br /><span class="grad">Become a coach.</span></h1>
-        <p>Empower is one virtual economy for commerce + coaching. List a product in 60 seconds, get paid in Empower Credits, cash out anytime — or monetize your skills as a coach.</p>
+        <p>One wallet for everything: shop 500k+ verified listings, launch your store in 60 seconds, or monetize your skills as a coach. 1 Empower Credit = $1, always.</p>
         <div class="hero-cta">
-          <button class="btn primary" data-nav="sell">Start selling — it's free</button>
-          <button class="btn ghost" data-nav="become-coach">Become a coach</button>
+          <button class="btn primary" data-nav="sell">Start selling — free</button>
+          <button class="btn ghost" data-nav="coaches">Find a coach</button>
+          <button class="btn ghost" id="howItWorksBtn">▶ How it works</button>
+        </div>
+        <div class="trust-row">
+          <span>✓ Verified sellers</span><span>✓ 14-day returns</span><span>✓ 2-day payouts</span><span>✓ 90% coach payout</span>
         </div>
         <div class="hero-stats">
           <div><b id="statProducts">0</b><span>live listings</span></div>
@@ -61,81 +69,109 @@
         </div>
       </div>
       <div class="hero-card">
-        <div class="hero-card-head"><span>● Empower Pay</span><span class="live">LIVE</span></div>
-        <div class="hero-card-balance"><small>Your balance</small><b id="walletBalanceHero">1,250 EC ≈ $1,250</b></div>
+        <div class="hero-card-head"><span>◉ Empower Pay</span><span class="live">LIVE</span></div>
+        <div class="hero-card-balance"><small>Your balance</small><b id="walletBalanceHero">1,250 EC ≈ $1,250.00</b></div>
         <div class="hero-card-row">
           <button class="btn small primary" data-nav="wallet">＋ Add funds</button>
           <button class="btn small" data-nav="dashboard">View earnings</button>
+        </div>
+        <div class="escrow-mini">
+          <div class="escrow-steps"><span class="done">Pay</span><i>→</i><span class="done">Escrow</span><i>→</i><span>Deliver</span><i>→</i><span>Release</span></div>
+          <small class="muted">Money is held safely until you confirm delivery.</small>
         </div>
         <div class="hero-feed" id="activityFeed"></div>
       </div>
     </div>
 
-    <div class="toolbar">
+    <div class="toolbar card-flat">
       <div class="pills" id="categoryPills"></div>
       <div class="toolbar-right">
+        <select id="typeFilter" aria-label="Fulfilment"><option value="All">All types</option><option>Physical</option><option>Digital</option><option>Service</option></select>
+        <select id="priceFilter" aria-label="Price"><option value="0">Any price</option><option value="30">Under $30</option><option value="60">Under $60</option><option value="100">Under $100</option><option value="150">Under $150</option></select>
         <select id="sortSelect" aria-label="Sort">
           <option value="featured">Featured</option>
           <option value="price-asc">Price ↑</option>
           <option value="price-desc">Price ↓</option>
           <option value="rating">Top rated</option>
+          <option value="sold">Best selling</option>
           <option value="newest">Newest</option>
         </select>
+        <label class="check"><input type="checkbox" id="stockToggle" /> In stock</label>
       </div>
     </div>
+    <div class="result-line"><span id="resultCount"></span><span class="muted" id="couponHint">Try code <button class="linklike" id="couponApplyHint">EMPOWER10</button> for 10% off</span></div>
     <div class="grid" id="productGrid"></div>
   </section>
 
   <!-- COACHES -->
   <section class="view" id="view-coaches">
     <div class="page-head">
-      <div><h2>Find your coach</h2><p>Book 1:1 video sessions. Pay with Empower Credits. Get a receipt + action plan every time.</p></div>
+      <div><h2>Find your coach 🎓</h2><p>1:1 video sessions, action plan + recording included. Pay with Empower Credits.</p></div>
       <div class="page-head-actions">
         <select id="coachFilter"><option value="All">All specialties</option></select>
+        <select id="coachSort"><option value="rating">Top rated</option><option value="sessions">Most sessions</option><option value="price-asc">Price ↑</option><option value="price-desc">Price ↓</option></select>
         <button class="btn primary" data-nav="become-coach">Become a coach</button>
       </div>
+    </div>
+    <div class="coach-banner card">
+      <div><b>Not sure who to pick?</b><div class="muted small">Answer 3 questions, get matched with 3 vetted coaches in seconds.</div></div>
+      <button class="btn primary" id="matchBtn">✨ Match me</button>
     </div>
     <div class="grid coaches" id="coachGrid"></div>
   </section>
 
   <!-- SELL -->
   <section class="view" id="view-sell">
-    <div class="page-head"><div><h2>Sell on Empower</h2><p>Zero listing fees. 5% marketplace fee only when you sell. Payouts in 2 days.</p></div>
-    <div class="page-head-actions"><span class="fee-chip">5% fee • No listing fee • 2-day payout</span></div></div>
+    <div class="page-head"><div><h2>Seller Studio 📦</h2><p>Zero listing fees. 5% fee only when you sell. Payouts in 2 days.</p></div>
+      <div class="page-head-actions"><span class="fee-chip">5% fee • No listing fee • 2-day payout</span></div></div>
     <div class="split">
       <form class="card form" id="sellForm">
-        <h3>＋ New listing</h3>
+        <h3 id="sellFormTitle">＋ New listing</h3>
+        <div class="img-preview" id="imgPreview">📦</div>
         <label>Product title<input name="title" required maxlength="80" placeholder="e.g. Handmade Leather Tote" /></label>
         <div class="row2">
           <label>Category<select name="category" id="sellCategory"></select></label>
-          <label>Price (USD)<input name="price" type="number" min="1" step="0.01" required placeholder="49.00" /></label>
+          <label>Price (USD)<input name="price" id="sellPrice" type="number" min="1" step="0.01" required placeholder="49.00" /></label>
         </div>
         <div class="row2">
-          <label>Stock<input name="stock" type="number" min="1" value="10" required /></label>
+          <label>Stock<input name="stock" type="number" min="0" value="10" required /></label>
           <label>Fulfilment<select name="type"><option value="Physical">Physical — ships</option><option value="Digital">Digital — instant download</option><option value="Service">Service</option></select></label>
         </div>
-        <label>Cover emoji / image URL<input name="image" placeholder="🎒 or https://…" /></label>
+        <label>Cover — emoji or image URL<input name="image" id="sellImage" placeholder="🎒 or https://…" /></label>
         <label>Description<textarea name="description" rows="4" required placeholder="Materials, size, shipping, what makes it great…"></textarea></label>
-        <button class="btn primary" type="submit">Publish listing →</button>
-        <p class="muted">By publishing you agree to the Empower Seller Policy: ship in 3 days, accept 14-day returns.</p>
+        <div class="fee-box" id="feeBox">Fee preview: —</div>
+        <div class="form-row">
+          <button class="btn primary" type="submit" id="sellSubmit">Publish listing →</button>
+          <button class="btn" type="button" id="sellCancelEdit" hidden>Cancel</button>
+        </div>
+        <p class="muted small">By publishing you agree to the Empower Seller Policy: ship in 3 days, accept 14-day returns, no counterfeit goods.</p>
       </form>
       <div>
         <div class="cards3">
-          <div class="mini-stat"><small>This month</small><b id="sellerRevenue">$0</b><span>revenue</span></div>
+          <div class="mini-stat"><small>Est. revenue</small><b id="sellerRevenue">$0</b><span>after fees</span></div>
           <div class="mini-stat"><small>Active</small><b id="sellerActive">0</b><span>listings</span></div>
-          <div class="mini-stat"><small>Orders</small><b id="sellerOrders">0</b><span>sold</span></div>
+          <div class="mini-stat"><small>Units sold</small><b id="sellerOrders">0</b><span>all time</span></div>
         </div>
-        <div class="card"><h3>My listings</h3><div id="myListings"></div></div>
+        <div class="card">
+          <div class="card-head"><h3>My listings</h3><button class="btn small" id="addSampleBtn">＋ Sample</button></div>
+          <div id="myListings"></div>
+        </div>
+        <div class="card tips"><h3>Seller tips 💡</h3>
+          <ul><li>Listings with real photos sell <b>3.2×</b> more.</li><li>Reply within <b>2h</b> → +22% conversion.</li><li>Price ending in <b>.00 / .49</b> converts best.</li></ul>
+        </div>
       </div>
     </div>
   </section>
 
   <!-- BECOME COACH -->
   <section class="view" id="view-become-coach">
-    <div class="page-head"><div><h2>Monetize what you know</h2><p>Coaches on Empower earn <b>$1,800/mo</b> on average. Keep <b>90%</b> of every booking.</p></div></div>
+    <div class="page-head"><div><h2>Monetize what you know ★</h2><p>Coaches earn <b>$1,800/mo</b> on average. Keep <b>90%</b> of every booking, paid weekly.</p></div></div>
+    <div class="earn-strip">
+      <div class="earn">5 hrs/wk → <b>$1,400/mo</b></div><div class="earn">10 hrs/wk → <b>$2,800/mo</b></div><div class="earn">20 hrs/wk → <b>$5,600/mo</b></div>
+    </div>
     <div class="split">
       <form class="card form" id="coachForm">
-        <h3>★ Coach application</h3>
+        <h3>★ Coach application <span class="tag ok">instant approval</span></h3>
         <div class="row2">
           <label>Display name<input name="name" required placeholder="Alex Morgan" /></label>
           <label>Specialty<select name="specialty"><option>Business</option><option>Fitness</option><option>Career</option><option>Design</option><option>Marketing</option><option>Finance</option><option>Language</option><option>Wellness</option></select></label>
@@ -146,18 +182,19 @@
         </div>
         <label>Headline<input name="headline" required maxlength="90" placeholder="e.g. I help stores go from 0 → $10k/mo" /></label>
         <label>Bio<textarea name="bio" rows="4" required placeholder="Who you help, your method, results…"></textarea></label>
-        <label>Intro video / portfolio link<input name="link" placeholder="https://…" /></label>
-        <button class="btn primary" type="submit">Submit application → instant approval (demo)</button>
+        <button class="btn primary" type="submit">Launch coach profile → +25 EC bonus</button>
       </form>
       <div class="card perks">
         <h3>Why coach on Empower?</h3>
         <ul>
           <li><b>90% payout</b> — highest in the industry, weekly payouts.</li>
-          <li><b>Built-in clients</b> — 40k+ buyers browse coaches monthly.</li>
-          <li><b>Zero scheduling pain</b> — calendar, reminders, video link + notes included.</li>
+          <li><b>Built-in demand</b> — 40k+ buyers browse coaches monthly.</li>
+          <li><b>Zero admin</b> — calendar, reminders, video link, notes + receipts.</li>
           <li><b>Credibility kit</b> — verified badge, reviews, earnings dashboard.</li>
         </ul>
-        <div class="coach-preview" id="coachPreview"></div>
+        <h4>Live preview</h4>
+        <div class="coach-preview" id="coachPreview">Fill the form → see your card here.</div>
+        <div id="myCoachBox"></div>
       </div>
     </div>
   </section>
@@ -165,67 +202,98 @@
   <!-- DASHBOARD -->
   <section class="view" id="view-dashboard">
     <div class="page-head"><div><h2 id="dashGreet">Your empire</h2><p>Sales + coaching + wallet in one place.</p></div>
-      <div class="page-head-actions"><button class="btn" id="resetDemo">↺ Reset demo data</button></div></div>
+      <div class="page-head-actions"><button class="btn" id="exportCsvBtn">⬇ Export CSV</button><button class="btn" id="resetDemo">↺ Reset demo</button></div></div>
     <div class="cards4">
       <div class="stat-card"><small>Total revenue</small><b id="dRevenue">$0</b><span class="up">▲ 18% this week</span></div>
-      <div class="stat-card"><small>Wallet balance</small><b id="dWallet">0 EC</b><span><a href="#" data-nav="wallet">Cash out →</a></span></div>
-      <div class="stat-card"><small>Orders sold</small><b id="dSold">0</b><span class="up">▲ fulfil in &lt;3 days</span></div>
+      <div class="stat-card"><small>Wallet balance</small><b id="dWallet">0 EC</b><span><a href="#/wallet" data-nav="wallet">Cash out →</a></span></div>
+      <div class="stat-card"><small>Units sold</small><b id="dSold">0</b><span class="up">98% on-time fulfilment</span></div>
       <div class="stat-card"><small>Coaching bookings</small><b id="dBookings">0</b><span id="dRating">★ 5.0 avg</span></div>
     </div>
+    <div class="goal card"><div><b id="goalLabel">Monthly goal — $3,000</b><div class="muted small" id="goalSub"></div></div>
+      <div class="bar"><i id="goalBar"></i></div></div>
     <div class="split">
-      <div class="card"><h3>Revenue — last 7 days</h3><canvas id="revChart" height="160"></canvas></div>
-      <div class="card"><h3>Next up</h3><div id="todoList"></div></div>
+      <div class="card"><div class="card-head"><h3>Revenue — last 7 days</h3><div class="tabs small" id="revTabs"><button data-r="7" class="active">7d</button><button data-r="30">30d</button></div></div><canvas id="revChart" height="160"></canvas>
+        <div id="topProducts"></div></div>
+      <div>
+        <div class="card"><h3>Next up</h3><div id="todoList"></div></div>
+        <div class="card"><h3>Coach earnings</h3><div id="coachEarnBox"></div></div>
+      </div>
     </div>
     <div class="card"><h3>Recent activity</h3><div id="recentActivity"></div></div>
   </section>
 
   <!-- ORDERS -->
   <section class="view" id="view-orders">
-    <div class="page-head"><div><h2>Orders & bookings</h2><p>Everything you bought, sold, and booked.</p></div>
+    <div class="page-head"><div><h2>Orders & bookings 📦</h2><p>Track, reorder, invoice, return — everything in one place.</p></div>
       <div class="page-head-actions"><div class="tabs" id="orderTabs"><button data-tab="bought" class="active">Bought</button><button data-tab="sold">Sold</button><button data-tab="bookings">Bookings</button></div></div></div>
     <div class="card"><div id="ordersList"></div></div>
   </section>
 
+  <!-- WISHLIST -->
+  <section class="view" id="view-wishlist">
+    <div class="page-head"><div><h2>Wishlist ♥</h2><p>Saved items + price-drop alerts.</p></div></div>
+    <div class="grid" id="wishGrid"></div>
+  </section>
+
   <!-- WALLET -->
   <section class="view" id="view-wallet">
-    <div class="page-head"><div><h2>Empower Wallet</h2><p>1 EC = $1. Pay, get paid, cash out. No hidden fees.</p></div></div>
+    <div class="page-head"><div><h2>Empower Wallet ◉</h2><p>1 EC = $1. Escrow protected. Cash out in 2 days, no fee over $50.</p></div>
+      <div class="page-head-actions"><button class="btn" id="exportTxBtn">⬇ Statement</button></div></div>
     <div class="split">
-      <div class="card wallet-main">
-        <small>Available balance</small>
-        <div class="big-bal" id="walletBig">1,250 EC</div>
-        <div class="muted">≈ $1,250.00 USD • Escrow protected</div>
-        <div class="wallet-btns">
-          <button class="btn primary" id="addFundsBtn">＋ Add funds</button>
-          <button class="btn" id="payoutBtn">Cash out</button>
-          <button class="btn" id="transferBtn">Send</button>
+      <div>
+        <div class="card wallet-main">
+          <small>Available balance</small>
+          <div class="big-bal" id="walletBig">1,250 EC</div>
+          <div class="muted" id="walletSub">≈ $1,250.00 USD • Escrow protected</div>
+          <div class="wallet-btns">
+            <button class="btn primary" id="addFundsBtn">＋ Add funds</button>
+            <button class="btn" id="payoutBtn">Cash out</button>
+            <button class="btn" id="transferBtn">Send</button>
+          </div>
+          <div class="pay-methods"><div>💳 Visa •• 4242</div><div>🏦 Bank •• 6789</div><div>◉ Empower Pay instant</div></div>
         </div>
-        <div class="pay-methods">
-          <div>💳 Visa •• 4242</div><div>🏦 Bank •• 6789</div><div>◉ Empower Pay instant</div>
+        <div class="card"><h3>Escrow — how you're protected</h3>
+          <div class="escrow-steps big"><span class="done">1 Pay</span><i>→</i><span class="done">2 Held</span><i>→</i><span>3 Delivered</span><i>→</i><span>4 Released</span></div>
+          <p class="muted small">Funds are locked in escrow on checkout and released to the seller only when you confirm delivery (or after 7 days auto-release). Full refund if never delivered.</p>
         </div>
       </div>
-      <div class="card"><h3>Transactions</h3><div id="txList"></div></div>
+      <div class="card"><div class="card-head"><h3>Transactions</h3><select id="txFilter"><option value="All">All</option><option value="in">Money in</option><option value="out">Money out</option></select></div><div id="txList"></div></div>
     </div>
   </section>
 </main>
 
 <footer class="footer">
-  <div><b>Empower</b> — the virtual economy for goods + coaching. <span class="muted">Demo build • data stored locally in your browser.</span></div>
-  <div class="muted">Seller protection • Escrow • Verified coaches • 2-day payouts</div>
+  <div class="foot-grid">
+    <div><div class="brand"><span class="brand-mark sm">E</span><b>Empower</b></div>
+      <p class="muted small">The virtual economy for goods + coaching.<br />Demo build • data stored locally in your browser.</p></div>
+    <div><b>Marketplace</b><a href="#/marketplace" data-nav="marketplace">Browse</a><a href="#/sell" data-nav="sell">Sell an item</a><a href="#/wishlist" data-nav="wishlist">Wishlist</a></div>
+    <div><b>Coaching</b><a href="#/coaches" data-nav="coaches">Find a coach</a><a href="#/become-coach" data-nav="become-coach">Become a coach</a></div>
+    <div><b>Trust</b><a href="#" id="footEscrow">Escrow & returns</a><a href="#" id="footFees">Fees</a><a href="#" id="footHelp">Help center</a></div>
+  </div>
+  <div class="foot-base muted small"><span>Seller protection • Escrow • Verified coaches • 2-day payouts</span><span>v2.0 final</span></div>
 </footer>
 
-<!-- Drawer: cart -->
 <div class="overlay" id="overlay"></div>
 <aside class="drawer" id="cartDrawer" aria-label="Cart">
   <div class="drawer-head"><h3>🛒 Your cart <span id="cartCount2"></span></h3><button class="icon-btn" id="closeCart">✕</button></div>
+  <div class="coupon-row"><input id="couponInput" placeholder="Coupon code (try EMPOWER10)" /><button class="btn small" id="couponBtn">Apply</button></div>
   <div class="drawer-body" id="cartItems"></div>
   <div class="drawer-foot">
-    <div class="total-row"><span>Subtotal</span><b id="cartTotal">$0.00</b></div>
-    <div class="muted small">Fees waived for buyers • Escrow included</div>
+    <div class="total-row small"><span>Subtotal</span><b id="cartSub">$0.00</b></div>
+    <div class="total-row small"><span>Discount <em id="cartDiscLabel"></em></span><b id="cartDisc">−$0.00</b></div>
+    <div class="total-row small"><span>Shipping</span><b id="cartShip">$0.00</b></div>
+    <div class="total-row"><span>Total</span><b id="cartTotal">$0.00</b></div>
+    <div class="muted small">Escrow included • 14-day returns • <span id="shipNote"></span></div>
     <button class="btn primary block" id="checkoutBtn">Checkout securely →</button>
   </div>
 </aside>
 
-<!-- Modal root -->
+<aside class="drawer" id="notifDrawer" aria-label="Notifications">
+  <div class="drawer-head"><h3>🔔 Notifications</h3><button class="icon-btn" id="closeNotif">✕</button></div>
+  <div class="drawer-body" id="notifList"></div>
+  <div class="drawer-foot"><button class="btn block" id="clearNotif">Mark all read</button></div>
+</aside>
+
 <div class="modal-root" id="modalRoot"></div>
 <div class="toast-root" id="toastRoot"></div>
 
