@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Empower — Virtual Economic Platform | Buy, Sell, Coach</title>
+<meta name="description" content="Empower is a virtual economic platform where users can sell goods, buy goods, become coaches, book coaching, and grow income." />
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='22' fill='%236d28d9'/><text x='50' y='68' font-size='52' text-anchor='middle' fill='white' font-family='Arial' font-weight='bold'>E</text></svg>" />
+<link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+<div id="bg-blobs" aria-hidden="true"><span></span><span></span><span></span></div>
+
+<header class="topbar">
+  <div class="topbar-inner">
+    <button class="icon-btn mobile-menu" id="mobileMenuBtn" aria-label="Menu">☰</button>
+    <a class="brand" href="#" data-nav="marketplace">
+      <span class="brand-mark">E</span>
+      <span class="brand-text">Empower<small>virtual economy</small></span>
+    </a>
+    <div class="search-wrap">
+      <span class="search-ico">⌕</span>
+      <input id="globalSearch" type="search" placeholder="Search products, coaches, skills…" autocomplete="off" />
+    </div>
+    <div class="top-actions">
+      <button class="pill-balance" data-nav="wallet" title="Wallet">
+        <span class="coin">◉</span><span id="walletBalanceTop">1,250 EC</span>
+      </button>
+      <button class="icon-btn cart-btn" id="cartBtn" aria-label="Cart">🛒<em id="cartCount">0</em></button>
+      <button class="avatar-btn" id="userBtn" aria-label="Account">JD</button>
+    </div>
+  </div>
+  <nav class="mainnav" id="mainNav">
+    <button data-nav="marketplace" class="active">🛍 Marketplace</button>
+    <button data-nav="coaches">🎓 Coaches</button>
+    <button data-nav="sell">＋ Sell Goods</button>
+    <button data-nav="become-coach">★ Become a Coach</button>
+    <button data-nav="dashboard">📊 Dashboard</button>
+    <button data-nav="orders">📦 Orders</button>
+    <button data-nav="wallet">◉ Wallet</button>
+  </nav>
+</header>
+
+<main id="app">
+  <!-- HERO + MARKETPLACE -->
+  <section class="view active" id="view-marketplace">
+    <div class="hero">
+      <div class="hero-copy">
+        <div class="eyebrow">● LIVE • 12,408 earners online</div>
+        <h1>Buy goods. Sell goods.<br /><span class="grad">Become a coach.</span></h1>
+        <p>Empower is one virtual economy for commerce + coaching. List a product in 60 seconds, get paid in Empower Credits, cash out anytime — or monetize your skills as a coach.</p>
+        <div class="hero-cta">
+          <button class="btn primary" data-nav="sell">Start selling — it's free</button>
+          <button class="btn ghost" data-nav="become-coach">Become a coach</button>
+        </div>
+        <div class="hero-stats">
+          <div><b id="statProducts">0</b><span>live listings</span></div>
+          <div><b id="statCoaches">0</b><span>vetted coaches</span></div>
+          <div><b>$1.2M+</b><span>paid to sellers</span></div>
+          <div><b>4.9★</b><span>avg rating</span></div>
+        </div>
+      </div>
+      <div class="hero-card">
+        <div class="hero-card-head"><span>● Empower Pay</span><span class="live">LIVE</span></div>
+        <div class="hero-card-balance"><small>Your balance</small><b id="walletBalanceHero">1,250 EC ≈ $1,250</b></div>
+        <div class="hero-card-row">
+          <button class="btn small primary" data-nav="wallet">＋ Add funds</button>
+          <button class="btn small" data-nav="dashboard">View earnings</button>
+        </div>
+        <div class="hero-feed" id="activityFeed"></div>
+      </div>
+    </div>
+
+    <div class="toolbar">
+      <div class="pills" id="categoryPills"></div>
+      <div class="toolbar-right">
+        <select id="sortSelect" aria-label="Sort">
+          <option value="featured">Featured</option>
+          <option value="price-asc">Price ↑</option>
+          <option value="price-desc">Price ↓</option>
+          <option value="rating">Top rated</option>
+          <option value="newest">Newest</option>
+        </select>
+      </div>
+    </div>
+    <div class="grid" id="productGrid"></div>
+  </section>
+
+  <!-- COACHES -->
+  <section class="view" id="view-coaches">
+    <div class="page-head">
+      <div><h2>Find your coach</h2><p>Book 1:1 video sessions. Pay with Empower Credits. Get a receipt + action plan every time.</p></div>
+      <div class="page-head-actions">
+        <select id="coachFilter"><option value="All">All specialties</option></select>
+        <button class="btn primary" data-nav="become-coach">Become a coach</button>
+      </div>
+    </div>
+    <div class="grid coaches" id="coachGrid"></div>
+  </section>
+
+  <!-- SELL -->
+  <section class="view" id="view-sell">
+    <div class="page-head"><div><h2>Sell on Empower</h2><p>Zero listing fees. 5% marketplace fee only when you sell. Payouts in 2 days.</p></div>
+    <div class="page-head-actions"><span class="fee-chip">5% fee • No listing fee • 2-day payout</span></div></div>
+    <div class="split">
+      <form class="card form" id="sellForm">
+        <h3>＋ New listing</h3>
+        <label>Product title<input name="title" required maxlength="80" placeholder="e.g. Handmade Leather Tote" /></label>
+        <div class="row2">
+          <label>Category<select name="category" id="sellCategory"></select></label>
+          <label>Price (USD)<input name="price" type="number" min="1" step="0.01" required placeholder="49.00" /></label>
+        </div>
+        <div class="row2">
+          <label>Stock<input name="stock" type="number" min="1" value="10" required /></label>
+          <label>Fulfilment<select name="type"><option value="Physical">Physical — ships</option><option value="Digital">Digital — instant download</option><option value="Service">Service</option></select></label>
+        </div>
+        <label>Cover emoji / image URL<input name="image" placeholder="🎒 or https://…" /></label>
+        <label>Description<textarea name="description" rows="4" required placeholder="Materials, size, shipping, what makes it great…"></textarea></label>
+        <button class="btn primary" type="submit">Publish listing →</button>
+        <p class="muted">By publishing you agree to the Empower Seller Policy: ship in 3 days, accept 14-day returns.</p>
+      </form>
+      <div>
+        <div class="cards3">
+          <div class="mini-stat"><small>This month</small><b id="sellerRevenue">$0</b><span>revenue</span></div>
+          <div class="mini-stat"><small>Active</small><b id="sellerActive">0</b><span>listings</span></div>
+          <div class="mini-stat"><small>Orders</small><b id="sellerOrders">0</b><span>sold</span></div>
+        </div>
+        <div class="card"><h3>My listings</h3><div id="myListings"></div></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- BECOME COACH -->
+  <section class="view" id="view-become-coach">
+    <div class="page-head"><div><h2>Monetize what you know</h2><p>Coaches on Empower earn <b>$1,800/mo</b> on average. Keep <b>90%</b> of every booking.</p></div></div>
+    <div class="split">
+      <form class="card form" id="coachForm">
+        <h3>★ Coach application</h3>
+        <div class="row2">
+          <label>Display name<input name="name" required placeholder="Alex Morgan" /></label>
+          <label>Specialty<select name="specialty"><option>Business</option><option>Fitness</option><option>Career</option><option>Design</option><option>Marketing</option><option>Finance</option><option>Language</option><option>Wellness</option></select></label>
+        </div>
+        <div class="row2">
+          <label>Rate (USD / hr)<input name="rate" type="number" min="10" value="60" required /></label>
+          <label>Experience (yrs)<input name="years" type="number" min="1" value="5" /></label>
+        </div>
+        <label>Headline<input name="headline" required maxlength="90" placeholder="e.g. I help stores go from 0 → $10k/mo" /></label>
+        <label>Bio<textarea name="bio" rows="4" required placeholder="Who you help, your method, results…"></textarea></label>
+        <label>Intro video / portfolio link<input name="link" placeholder="https://…" /></label>
+        <button class="btn primary" type="submit">Submit application → instant approval (demo)</button>
+      </form>
+      <div class="card perks">
+        <h3>Why coach on Empower?</h3>
+        <ul>
+          <li><b>90% payout</b> — highest in the industry, weekly payouts.</li>
+          <li><b>Built-in clients</b> — 40k+ buyers browse coaches monthly.</li>
+          <li><b>Zero scheduling pain</b> — calendar, reminders, video link + notes included.</li>
+          <li><b>Credibility kit</b> — verified badge, reviews, earnings dashboard.</li>
+        </ul>
+        <div class="coach-preview" id="coachPreview"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- DASHBOARD -->
+  <section class="view" id="view-dashboard">
+    <div class="page-head"><div><h2 id="dashGreet">Your empire</h2><p>Sales + coaching + wallet in one place.</p></div>
+      <div class="page-head-actions"><button class="btn" id="resetDemo">↺ Reset demo data</button></div></div>
+    <div class="cards4">
+      <div class="stat-card"><small>Total revenue</small><b id="dRevenue">$0</b><span class="up">▲ 18% this week</span></div>
+      <div class="stat-card"><small>Wallet balance</small><b id="dWallet">0 EC</b><span><a href="#" data-nav="wallet">Cash out →</a></span></div>
+      <div class="stat-card"><small>Orders sold</small><b id="dSold">0</b><span class="up">▲ fulfil in &lt;3 days</span></div>
+      <div class="stat-card"><small>Coaching bookings</small><b id="dBookings">0</b><span id="dRating">★ 5.0 avg</span></div>
+    </div>
+    <div class="split">
+      <div class="card"><h3>Revenue — last 7 days</h3><canvas id="revChart" height="160"></canvas></div>
+      <div class="card"><h3>Next up</h3><div id="todoList"></div></div>
+    </div>
+    <div class="card"><h3>Recent activity</h3><div id="recentActivity"></div></div>
+  </section>
+
+  <!-- ORDERS -->
+  <section class="view" id="view-orders">
+    <div class="page-head"><div><h2>Orders & bookings</h2><p>Everything you bought, sold, and booked.</p></div>
+      <div class="page-head-actions"><div class="tabs" id="orderTabs"><button data-tab="bought" class="active">Bought</button><button data-tab="sold">Sold</button><button data-tab="bookings">Bookings</button></div></div></div>
+    <div class="card"><div id="ordersList"></div></div>
+  </section>
+
+  <!-- WALLET -->
+  <section class="view" id="view-wallet">
+    <div class="page-head"><div><h2>Empower Wallet</h2><p>1 EC = $1. Pay, get paid, cash out. No hidden fees.</p></div></div>
+    <div class="split">
+      <div class="card wallet-main">
+        <small>Available balance</small>
+        <div class="big-bal" id="walletBig">1,250 EC</div>
+        <div class="muted">≈ $1,250.00 USD • Escrow protected</div>
+        <div class="wallet-btns">
+          <button class="btn primary" id="addFundsBtn">＋ Add funds</button>
+          <button class="btn" id="payoutBtn">Cash out</button>
+          <button class="btn" id="transferBtn">Send</button>
+        </div>
+        <div class="pay-methods">
+          <div>💳 Visa •• 4242</div><div>🏦 Bank •• 6789</div><div>◉ Empower Pay instant</div>
+        </div>
+      </div>
+      <div class="card"><h3>Transactions</h3><div id="txList"></div></div>
+    </div>
+  </section>
+</main>
+
+<footer class="footer">
+  <div><b>Empower</b> — the virtual economy for goods + coaching. <span class="muted">Demo build • data stored locally in your browser.</span></div>
+  <div class="muted">Seller protection • Escrow • Verified coaches • 2-day payouts</div>
+</footer>
+
+<!-- Drawer: cart -->
+<div class="overlay" id="overlay"></div>
+<aside class="drawer" id="cartDrawer" aria-label="Cart">
+  <div class="drawer-head"><h3>🛒 Your cart <span id="cartCount2"></span></h3><button class="icon-btn" id="closeCart">✕</button></div>
+  <div class="drawer-body" id="cartItems"></div>
+  <div class="drawer-foot">
+    <div class="total-row"><span>Subtotal</span><b id="cartTotal">$0.00</b></div>
+    <div class="muted small">Fees waived for buyers • Escrow included</div>
+    <button class="btn primary block" id="checkoutBtn">Checkout securely →</button>
+  </div>
+</aside>
+
+<!-- Modal root -->
+<div class="modal-root" id="modalRoot"></div>
+<div class="toast-root" id="toastRoot"></div>
+
+<script src="app.js"></script>
+</body>
+</html>
