@@ -1,5 +1,5 @@
-/* Empower v3.0 expanded — marketplace + deals + services + learn + community + inbox. Vanilla JS + localStorage. */
-const KEY = 'empower_state_v3';
+/* Empower v4.0 best-work — marketplace + deals + auctions + services + learn + events + community + inbox + rewards. Vanilla JS + localStorage. */
+const KEY = 'empower_state_v4';
 const CATS = ['All','Fashion','Tech','Digital','Art','Wellness','Home','Courses'];
 const COUPONS = { EMPOWER10: 0.10, WELCOME15: 0.15, COACH20: 0.20, PLUS25: 0.25 };
 const FX = { USD: { r: 1, s: '$' }, EUR: { r: 0.92, s: '€' }, GBP: { r: 0.79, s: '£' } };
@@ -11,12 +11,42 @@ const ec = n => Number(n || 0).toLocaleString(undefined, { maximumFractionDigits
 const esc = s => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 const uid = p => p + '-' + Math.floor(1000 + Math.random() * 9000);
 const today = () => 'Today';
+const debounce = (fn, ms) => { let t; return (...a) => { clearTimeout(t); t = setTimeout(() => fn(...a), ms); }; };
+function addPoints(n, why) {
+  S.points = (S.points || 0) + n;
+  if (why) { S.notifs.unshift({ t: '+' + n + ' pts — ' + why, d: today(), read: false }); }
+  save(); renderRewardsBadge();
+}
+function fmtLeft(ms) {
+  ms = Math.max(0, ms);
+  const h = Math.floor(ms / 3600000), m = Math.floor(ms % 3600000 / 60000), s = Math.floor(ms % 60000 / 1000);
+  return String(h).padStart(2, '0') + ':' + String(m).padStart(2, '0') + ':' + String(s).padStart(2, '0');
+}
 
 function seed() {
   return {
-    v: 3,
+    v: 4,
     onboarded: false,
     theme: 'dark',
+    prefs: { feed: true, outbid: true, pricedrop: true },
+    addresses: ['123 Market St, Austin TX'],
+    payMethods: ['Visa •• 4242', 'Bank •• 6789'],
+    points: 120, streak: 2, lastCheckin: '', badges: ['welcome'],
+    auctions: [
+      { id: 'a1', title: 'Signed Atelier Tote — 1 of 50', seller: 'Maya Atelier', img: '👜', start: 80, bid: 132, bids: 14, endsAt: Date.now() + 5 * 3600 * 1000, watched: true, leader: 'Lena K.', desc: 'Numbered edition, hand-signed. Ships insured worldwide.' },
+      { id: 'a2', title: 'Studio Test Pressing + Print', seller: 'Studio Kline', img: '🎨', start: 40, bid: 68, bids: 9, endsAt: Date.now() + 26 * 3600 * 1000, watched: false, leader: 'Tom R.', desc: 'Rare test pressing + A3 signed print. One owner.' },
+      { id: 'a3', title: '1:1 Store Audit + Ad Account (90 min)', seller: 'Alex Morgan', img: '🚀', start: 50, bid: 91, bids: 11, endsAt: Date.now() + 9 * 3600 * 1000, watched: false, leader: 'Ava M.', desc: 'Live teardown + 30-day roadmap. Recording included.' },
+      { id: 'a4', title: 'Vintage Film Camera — serviced', seller: 'Kiln & Co', img: '📷', start: 120, bid: 185, bids: 21, endsAt: Date.now() + 2 * 3600 * 1000, watched: true, leader: 'You', desc: 'Fully serviced, new seals, 30-day warranty.' }
+    ],
+    events: [
+      { id: 'e1', title: 'Zero → First $1k Live Sprint', host: 'Alex Morgan', when: 'Oct 8 • 6PM CT', price: 25, seats: 200, taken: 143, img: '🚀', tag: 'Workshop', desc: 'Pick a product, build the page live, launch ads together.' },
+      { id: 'e2', title: 'Form-Check Friday (free)', host: 'Priya Nair', when: 'Oct 10 • 12PM CT', price: 0, seats: 100, taken: 78, img: '💪', tag: 'Fitness', desc: 'Live squat/deadlift reviews + Q&A. Bring a friend.' },
+      { id: 'e3', title: 'Portfolio Roast: Get Hired', host: 'Diego Ruiz', when: 'Oct 12 • 5PM CT', price: 15, seats: 150, taken: 61, img: '🎨', tag: 'Design', desc: '5 portfolios torn down + rebuilt. Submit yours.' },
+      { id: 'e4', title: 'Seller Tax AMA', host: 'Marcus Lee', when: 'Oct 15 • 7PM CT', price: 10, seats: 300, taken: 112, img: '📊', tag: 'Finance', desc: 'Deductions, quarterly tax, bookkeeping systems.' }
+    ],
+    tickets: [],
+    polls: [{ id: 'pl1', q: 'What should drop next Friday?', opts: ['Mug new glaze', 'Tote new color', 'Print collab'], votes: [41, 66, 28], voted: -1 }],
+    qa: { p1: [{ q: 'Is this full-grain or top-grain?', a: 'Full-grain, vegetable-tanned. Ages beautifully.' }], p2: [{ q: 'Multipoint with iPhone + Mac?', a: 'Yes — holds both, switches seamlessly.' }] },
     user: { name: 'Jordan Doe', email: 'jordan@empower.app', balance: 1250, memberSince: '2025', avatar: 'JD', address: '123 Market St, Austin TX', emoji: '🧑‍🚀', currency: 'USD', plus: false, referral: 'JORDAN-2026', invites: 0 },
     dealsEndsAt: Date.now() + 14 * 3600 * 1000,
     deals: [
@@ -113,19 +143,27 @@ let S;
 try {
   const raw = localStorage.getItem(KEY);
   S = raw ? JSON.parse(raw) : seed();
-  if (!S || S.v !== 3 || !Array.isArray(S.products)) {
-    // migrate v2 -> v3: keep user goods, add new modules
+  if (!S || S.v !== 4 || !Array.isArray(S.products)) {
     const fresh = seed();
     if (S && Array.isArray(S.products)) {
-      ['products', 'coaches', 'orders', 'sold', 'bookings', 'txs', 'cart', 'wishlist', 'notifs', 'reviews', 'coachReviews', 'messages', 'myCoach'].forEach(k => { if (S[k] !== undefined) fresh[k] = S[k]; });
-      if (S.user) fresh.user = Object.assign(fresh.user, S.user);
+      ['products', 'coaches', 'orders', 'sold', 'bookings', 'txs', 'cart', 'wishlist', 'notifs', 'reviews', 'coachReviews', 'messages', 'myCoach', 'deals', 'gigs', 'gigRequests', 'courses', 'posts', 'threads', 'disputes', 'giftCodes', 'following', 'user', 'coupon'].forEach(k => { if (S[k] !== undefined) fresh[k] = S[k]; });
       fresh.onboarded = S.onboarded !== false;
+      fresh.theme = S.theme || 'dark';
     }
     S = fresh;
   }
 } catch (e) { S = seed(); }
 S.user.currency = S.user.currency || 'USD';
 S.user.referral = S.user.referral || 'JORDAN-2026';
+S.points = S.points == null ? 120 : S.points;
+S.prefs = S.prefs || { feed: true, outbid: true, pricedrop: true };
+S.addresses = S.addresses && S.addresses.length ? S.addresses : [S.user.address || '123 Market St, Austin TX'];
+S.payMethods = S.payMethods && S.payMethods.length ? S.payMethods : ['Visa •• 4242', 'Bank •• 6789'];
+S.qa = S.qa || {};
+S.polls = S.polls || seed().polls;
+S.auctions = S.auctions || seed().auctions;
+S.events = S.events || seed().events;
+S.tickets = S.tickets || [];
 const save = () => { try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) {} };
 function applyTheme() { document.documentElement.dataset.theme = S.theme === 'light' ? 'light' : ''; const b = $('#themeBtn'); if (b) b.textContent = S.theme === 'light' ? '☀️' : '🌙'; }
 
@@ -156,7 +194,8 @@ function closeModal() {
 }
 window.closeModal = closeModal;
 document.addEventListener('keydown', e => {
-  if (e.key === 'Escape') { closeModal(); closeCart(); closeNotif(); hideSearch(); }
+  if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') { e.preventDefault(); ($('#paletteRoot').hidden ? openPalette() : closePalette()); return; }
+  if (e.key === 'Escape') { closeModal(); closeCart(); closeNotif(); hideSearch(); closePalette(); toggleAssist(false); }
   if (e.key === '/' && document.activeElement !== $('#globalSearch') && !/INPUT|TEXTAREA/.test(document.activeElement.tagName)) { e.preventDefault(); $('#globalSearch').focus(); }
 });
 function imgHTML(p, cls) {
@@ -167,10 +206,11 @@ function imgHTML(p, cls) {
 function stars(r) { const f = Math.round(Number(r) || 0); return '★'.repeat(f) + '☆'.repeat(Math.max(0, 5 - f)); }
 
 /* ---------- navigation (hash routing) ---------- */
-const VIEWS = ['marketplace', 'deals', 'services', 'learn', 'coaches', 'community', 'sell', 'become-coach', 'dashboard', 'orders', 'inbox', 'wishlist', 'wallet'];
+const VIEWS = ['marketplace', 'deals', 'auctions', 'services', 'learn', 'events', 'coaches', 'community', 'sell', 'become-coach', 'dashboard', 'orders', 'inbox', 'rewards', 'wishlist', 'wallet', 'settings'];
 function nav(name) {
   if (VIEWS.indexOf(name) < 0) name = 'marketplace';
   $$('#mainNav button').forEach(b => b.classList.toggle('active', b.dataset.nav === name));
+  $$('.mobile-tabs button').forEach(b => b.classList.toggle('active', b.dataset.nav === name));
   $$('.view').forEach(v => v.classList.toggle('active', v.id === 'view-' + name));
   const navEl = $('#mainNav'); if (navEl) navEl.classList.remove('open');
   try { if (location.hash !== '#/' + name) history.replaceState(null, '', '#/' + name); } catch (e) {}
@@ -183,10 +223,14 @@ function nav(name) {
   if (name === 'coaches') renderCoaches();
   if (name === 'marketplace') renderMarket();
   if (name === 'deals') renderDeals();
+  if (name === 'auctions') renderAuctions();
   if (name === 'services') renderServices();
   if (name === 'learn') renderLearn();
+  if (name === 'events') renderEvents();
   if (name === 'community') renderCommunity();
   if (name === 'inbox') renderInbox();
+  if (name === 'rewards') renderRewards();
+  if (name === 'settings') renderSettings();
 }
 window.nav = nav;
 document.addEventListener('click', e => {
@@ -260,15 +304,24 @@ function toggleWish(id) {
 }
 window.toggleWish = toggleWish;
 
+function variantsFor(p) {
+  if (p.category === 'Fashion') return { Size: ['XS', 'S', 'M', 'L', 'XL'], Color: ['Black', 'Tan', 'Cream'] };
+  if (p.category === 'Tech') return { Color: ['Black', 'White'], Warranty: ['1yr', '2yr +$12'] };
+  if (p.category === 'Home') return { Set: ['Duo', 'Set of 4 +$18'] };
+  return null;
+}
 function viewProduct(id) {
   const p = S.products.find(x => x.id === id); if (!p) return;
   const revs = S.reviews[id] || [];
+  const qas = S.qa[id] || [];
   const related = S.products.filter(x => x.id !== id && x.category === p.category && !x.paused).slice(0, 3);
+  const vars = variantsFor(p);
+  const vopts = vars ? Object.entries(vars).map(([k, opts]) => '<label>' + esc(k) + '<div class="variant-pills" data-var="' + esc(k) + '">' + opts.map((o, i) => '<button class="' + (i === 0 ? 'sel' : '') + '" data-v="' + esc(o) + '">' + esc(o) + '</button>').join('') + '</div></label>').join('') : '';
   openModal(
     '<div class="p-img" style="border-radius:14px;height:190px;font-size:84px"><span class="badge">' + esc(p.category) + ' • ' + esc(p.type) + '</span>' + imgHTML(p) + '</div>' +
     '<h3 style="margin:12px 0 4px">' + esc(p.title) + '</h3>' +
-    '<div class="muted small">by <b>' + esc(p.seller) + '</b> • <span class="stars">★ ' + p.rating + '</span> (' + p.reviews + ' reviews) • ' + Number(p.sold).toLocaleString() + ' sold</div>' +
-    '<p>' + esc(p.desc) + '</p>' +
+    '<div class="muted small">by <a href="#" id="pvSeller"><b>' + esc(p.seller) + '</b></a> • <span class="stars">★ ' + p.rating + '</span> (' + p.reviews + ' reviews) • ' + Number(p.sold).toLocaleString() + ' sold</div>' +
+    '<p>' + esc(p.desc) + '</p>' + vopts +
     '<div class="total-row"><span>Price</span><b>' + money(p.price) + ' <span class="muted small">(' + ec(p.price) + ')</span></b></div>' +
     '<div class="muted small" style="margin:6px 0">Stock: ' + (p.type === 'Digital' ? '∞ instant delivery' : p.stock) + ' • ' + (p.type === 'Digital' ? 'Instant download' : 'Ships in 2–3 days') + ' • 14-day returns • Escrow protected</div>' +
     '<div class="row2"><label>Qty<select id="pvQty"><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option></select></label>' +
@@ -278,6 +331,9 @@ function viewProduct(id) {
     '<button class="btn primary" style="flex:1" id="pvBuy">Buy now — ' + money(p.price) + '</button>' +
     '<button class="btn" id="pvAdd">＋ Cart</button>' +
     '<button class="btn" id="pvWish">' + (S.wishlist.indexOf(p.id) >= 0 ? '♥ Saved' : '♡ Save') + '</button></div>' +
+    '<div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn small" id="pvShare">🔗 Share</button><button class="btn small" id="pvOffer">◐ Offer</button><button class="btn small danger" id="pvReport">Flag</button></div>' +
+    '<h4 style="margin-top:12px">Questions (' + qas.length + ')</h4><div>' + (qas.map(q => '<div class="qa"><b>Q: ' + esc(q.q) + '</b><div class="muted">A: ' + esc(q.a) + '</div></div>').join('') || '<div class="muted small">No questions yet — ask below.</div>') + '</div>' +
+    '<div style="display:flex;gap:8px;margin-top:6px"><input id="pvQ" placeholder="Ask the seller…" /><button class="btn small" id="pvQGo">Ask</button></div>' +
     '<h4>Reviews (' + (revs.length + Math.min(2, p.reviews ? 2 : 0)) + ')</h4><div id="pvRevs">' +
     revs.map(r => '<div class="review"><b>' + esc(r.n) + '</b> <span class="stars">' + stars(r.r) + '</span> <span class="muted small">' + esc(r.d) + '</span><div>' + esc(r.t) + '</div></div>').join('') +
     '<div class="review"><b>Verified buyer</b> <span class="stars">★★★★★</span><div>Exactly as described, fast shipping. Would buy again.</div></div></div>' +
@@ -289,9 +345,21 @@ function viewProduct(id) {
   );
   const zip = $('#pvZip');
   if (zip) zip.oninput = () => { $('#pvShip').textContent = zip.value.length >= 3 ? '✓ Delivery to ' + zip.value + ': ' + (p.type === 'Digital' ? 'instant' : '2–4 days • ' + money(4.95) + ' (free over $75)') : ''; };
-  $('#pvAdd').onclick = () => { addToCart(p.id, false, Number($('#pvQty').value || 1)); };
+  $$('#modalRoot [data-var] button').forEach(b => b.onclick = () => { $$('#modalRoot [data-var="' + b.parentElement.dataset.var + '"] button').forEach(x => x.classList.remove('sel')); b.classList.add('sel'); });
+  const selVars = () => { const o = {}; $$('#modalRoot [data-var]').forEach(d => { const s = d.querySelector('.sel'); if (s) o[d.dataset.var] = s.dataset.v; }); return o; };
+  window._lastVars = selVars;
+  $('#pvAdd').onclick = () => { const v = selVars(); addToCart(p.id, false, Number($('#pvQty').value || 1)); if (Object.keys(v).length) toast('Added (' + Object.values(v).join(', ') + ')', 'ok'); };
   $('#pvBuy').onclick = () => { addToCart(p.id, true, Number($('#pvQty').value || 1)); closeModal(); openCart(); };
   $('#pvWish').onclick = () => { toggleWish(p.id); closeModal(); viewProduct(p.id); };
+  const sh = $('#pvShare'); if (sh) sh.onclick = () => { const link = location.origin + location.pathname + '#/marketplace?item=' + p.id; try { navigator.clipboard.writeText(link); } catch (e) {} toast('Link copied — share it anywhere 🔗', 'ok'); };
+  const of = $('#pvOffer'); if (of) of.onclick = () => { closeModal(); makeOffer(p.id); };
+  const rp = $('#pvReport'); if (rp) rp.onclick = () => { notify('Thanks — "' + p.title + '" flagged for review.'); toast('Reported. Trust team will review in 24h.', 'ok'); };
+  const ps = $('#pvSeller'); if (ps) ps.onclick = e => { e.preventDefault(); closeModal(); sellerStore(p.seller); };
+  const qg = $('#pvQGo'); if (qg) qg.onclick = () => {
+    const v = $('#pvQ').value.trim(); if (!v) return;
+    (S.qa[p.id] = S.qa[p.id] || []).push({ q: v, a: 'Seller typically replies in ~2h. We notified ' + p.seller + '.' });
+    save(); closeModal(); viewProduct(p.id); toast('Question sent to seller ✓', 'ok');
+  };
   $('#pvSend').onclick = () => {
     const t = $('#pvText').value.trim(); if (!t) return toast('Write a review first', 'err');
     (S.reviews[p.id] = S.reviews[p.id] || []).unshift({ n: S.user.name.split(' ')[0], r: Number($('#pvRate').value), t, d: today() });
@@ -304,8 +372,8 @@ window.viewProduct = viewProduct;
 /* ---------- search ---------- */
 function hideSearch() { const d = $('#searchDrop'); if (d) d.hidden = true; }
 function bindSearch() {
-  const inp = $('#globalSearch'); if (!inp) return;
-  inp.addEventListener('input', () => {
+  const inp = $('#globalSearch'); if (!inp || inp.dataset.bound) return; inp.dataset.bound = '1';
+  const run = debounce(() => {
     S.q = inp.value.trim();
     const q = S.q.toLowerCase();
     const drop = $('#searchDrop');
@@ -324,7 +392,8 @@ function bindSearch() {
     } else drop.hidden = true;
     if (!$('#view-marketplace').classList.contains('active')) nav('marketplace');
     renderMarket();
-  });
+  }, 220);
+  inp.addEventListener('input', run);
   inp.addEventListener('keydown', e => { if (e.key === 'Enter') hideSearch(); });
   document.addEventListener('click', e => { if (!e.target.closest('.search-wrap')) hideSearch(); });
 }
@@ -420,9 +489,12 @@ function drawCheckout() {
   let body = '<div class="steps"><span class="' + (checkout.step === 1 ? 'on' : '') + '">1 Details</span><span class="' + (checkout.step === 2 ? 'on' : '') + '">2 Payment</span><span class="' + (checkout.step === 3 ? 'on' : '') + '">3 Review</span></div>';
   if (checkout.step === 1) {
     body += '<h3>Where is it going?</h3><label>Full name<input id="coName" value="' + esc(checkout.name) + '" /></label>' +
-      '<label>Street address<input id="coAddr" value="' + esc(checkout.address) + '" /></label>' +
+      '<label>Saved address<select id="coAddrSel">' + S.addresses.map(a => '<option' + (a === checkout.address ? ' selected' : '') + '>' + esc(a) + '</option>').join('') + '<option value="__new">＋ New address…</option></select></label>' +
+      '<label id="coAddrNewWrap" hidden>Street address<input id="coAddr" value="' + esc(checkout.address) + '" /></label>' +
       '<div class="row2"><label>ZIP<input id="coZip" placeholder="78701" value="' + esc(checkout.zip) + '" /></label>' +
       '<label>Speed<select id="coSpeed"><option>Standard (2–4d) — ' + (ship === 0 ? 'FREE' : money(ship)) + '</option><option>Express (1–2d) — $12.90</option></select></label></div>' +
+      '<label class="check"><input type="checkbox" id="coGift" style="width:auto" /> 🎁 Gift wrap +$4.90 (note included)</label>' +
+      '<label>Delivery note (optional)<input id="coNote" placeholder="e.g. Leave at door" /></label>' +
       '<button class="btn primary block" id="coNext">Continue to payment →</button>';
   } else if (checkout.step === 2) {
     body += '<h3>How do you pay?</h3><label><input type="radio" name="pay" value="balance" style="width:auto" ' + (checkout.pay === 'balance' ? 'checked' : '') + ' /> ◉ Empower Balance (' + ec(S.user.balance) + ')</label>' +
@@ -438,11 +510,18 @@ function drawCheckout() {
       '<div style="display:flex;gap:8px;margin-top:10px"><button class="btn" id="coBack">← Back</button><button class="btn primary" style="flex:1" id="coPay">Pay ' + money(total) + ' →</button></div>';
   }
   openModal(body);
+  const sel = $('#coAddrSel');
+  if (sel) sel.onchange = () => { const w = $('#coAddrNewWrap'); if (!w) return; const isNew = sel.value === '__new'; w.hidden = !isNew; if (!isNew) { const a = $('#coAddr'); if (a) a.value = sel.value; } else { const a = $('#coAddr'); if (a) { a.value = ''; a.focus(); } } };
   const next = $('#coNext');
   if (next) next.onclick = () => {
     if (checkout.step === 1) {
-      checkout.name = $('#coName').value.trim(); checkout.address = $('#coAddr').value.trim(); checkout.zip = $('#coZip').value.trim();
+      checkout.name = $('#coName').value.trim();
+      const s = $('#coAddrSel'); const custom = ($('#coAddr') || {}).value || '';
+      checkout.address = (s && s.value === '__new') ? custom.trim() : (s ? s.value : custom.trim());
+      checkout.zip = $('#coZip').value.trim(); checkout.gift = !!($('#coGift') || {}).checked; checkout.note = ($('#coNote') || {}).value || '';
       if (!checkout.name || !checkout.address) { toast('Add name + address', 'err'); return; }
+      if (S.addresses.indexOf(checkout.address) < 0) { S.addresses.push(checkout.address); S.user.address = checkout.address; save(); }
+      checkout.express = false;
       const sp = $('#coSpeed'); if (sp && sp.selectedIndex === 1) checkout.express = true;
     }
     if (checkout.step === 2) { const r = document.querySelector('input[name="pay"]:checked'); checkout.pay = r ? r.value : 'balance'; }
@@ -453,7 +532,7 @@ function drawCheckout() {
 }
 function placeOrder() {
   const sub = cartSubtotal(), disc = cartDiscount(sub);
-  let ship = cartShipping(sub); if (checkout.express) ship += 12.9;
+  let ship = cartShipping(sub); if (checkout.express) ship += 12.9; if (checkout.gift) ship += 4.9;
   const total = Math.max(0, sub - disc + ship);
   if (checkout.pay === 'balance' && S.user.balance < total) { toast('Insufficient balance — add funds or pay by card', 'err'); closeModal(); nav('wallet'); return; }
   if (checkout.pay === 'balance') S.user.balance -= total;
@@ -466,7 +545,10 @@ function placeOrder() {
   S.txs.unshift({ t: 'Marketplace purchase (' + lines.length + ' items)', a: checkout.pay === 'balance' ? -total : 0, d: today(), k: 'out', note: checkout.pay === 'card' ? 'Visa ••4242 ' + money(total) : '' });
   S.feed.unshift('🛍️ ' + S.user.name.split(' ')[0] + ' just checked out ' + lines.length + ' item(s) for ' + money(total));
   notify('Order confirmed — ' + lines.length + ' item(s), ' + money(total) + '. Track it in Orders.');
-  S.cart = []; S.coupon = null; save();
+  S.cart = []; S.coupon = null;
+  S.dealOverride = {};
+  addPoints(10 * lines.length, 'purchase');
+  save();
   closeModal(); closeCart(); renderMarket(); renderWallet();
   openModal('<div class="empty"><span class="big">🎉</span><h3>Order confirmed!</h3><p class="muted">Paid ' + money(total) + ' via ' + (checkout.pay === 'balance' ? 'Empower Balance' : 'Visa ••4242') + '. Funds are in escrow until delivery.</p><button class="btn primary block" onclick="closeModal();nav(\'orders\')">Track my order →</button></div>');
   S.orderTab = 'bought'; renderOrders(); updateWalletUI();
@@ -1097,6 +1179,225 @@ function disputeModal(orderId) {
   };
 }
 
+/* ---------- v4 modules: auctions / events / rewards / settings / assistant / palette ---------- */
+function renderAuctions() {
+  const g = $('#auctionGrid'); if (!g) return;
+  const pills = ['All', 'Ending soon', 'Watching'];
+  const ap = $('#auctionPills');
+  if (ap && !ap.dataset.init) { ap.innerHTML = pills.map(p => '<button data-ap="' + p + '">' + p + '</button>').join(''); ap.dataset.init = '1'; }
+  const f = S.auctionFilter || 'All';
+  $$('#auctionPills button').forEach(b => { b.classList.toggle('active', b.dataset.ap === f); b.onclick = () => { S.auctionFilter = b.dataset.ap; save(); renderAuctions(); }; });
+  let list = S.auctions.slice().sort((a, b) => a.endsAt - b.endsAt);
+  if (f === 'Watching' || ($('#watchOnly') || {}).checked) list = list.filter(a => a.watched);
+  if (f === 'Ending soon') list = list.filter(a => a.endsAt - Date.now() < 12 * 3600 * 1000);
+  g.innerHTML = list.map(a => {
+    const left = a.endsAt - Date.now();
+    const ended = left <= 0;
+    return '<div class="product"><div class="p-img" style="font-size:64px">' + a.img + '<span class="badge">⏳ Auction</span>' +
+      '<button class="heart' + (a.watched ? ' on' : '') + '" data-aw="' + a.id + '">' + (a.watched ? '♥' : '♡') + '</button></div>' +
+      '<div class="p-body"><h4>' + esc(a.title) + '</h4><div class="seller">by ' + esc(a.seller) + ' • ' + a.bids + ' bids • leader: <b>' + esc(a.leader) + '</b></div>' +
+      '<div class="p-meta"><span class="price">' + money(a.bid) + '</span><span class="auction-time" data-auc-t="' + a.id + '">' + (ended ? 'ENDED' : fmtLeft(left)) + '</span></div>' +
+      '<small class="muted">' + esc(a.desc) + '</small>' +
+      '<div class="bid-row"><input type="number" id="bid-' + a.id + '" value="' + (a.bid + 5) + '" min="' + (a.bid + 1) + '" /><button class="btn primary" data-bid="' + a.id + '"' + (ended ? ' disabled' : '') + '>' + (ended ? 'Closed' : 'Bid') + '</button></div></div></div>';
+  }).join('') || '<div class="card empty">No auctions here.</div>';
+  $$('#auctionGrid [data-aw]').forEach(b => b.onclick = () => { const a = S.auctions.find(x => x.id === b.dataset.aw); a.watched = !a.watched; save(); renderAuctions(); });
+  $$('#auctionGrid [data-bid]').forEach(b => b.onclick = () => placeBid(b.dataset.bid));
+  const wo = $('#watchOnly'); if (wo) wo.onchange = renderAuctions;
+}
+function placeBid(id) {
+  const a = S.auctions.find(x => x.id === id); if (!a) return;
+  const v = Number(($('#bid-' + id) || {}).value || 0);
+  if (!(v > a.bid)) { toast('Bid higher than ' + money(a.bid), 'err'); return; }
+  if (v > S.user.balance + a.bid && S.user.balance < v) { toast('Insufficient balance for escrow hold', 'err'); nav('wallet'); return; }
+  const wasLeader = a.leader === 'You';
+  a.bid = v; a.bids++; a.leader = 'You';
+  S.threads.unshift({ id: uid('T'), from: 'Auction bot', kind: 'orders', title: 'Bid placed: ' + a.title, preview: money(v) + ' — you lead!', time: today(), unread: 0, msgs: [{ me: false, t: 'You lead "' + a.title + '" at ' + money(v) + '. We hold it in escrow; outbid = instant refund.' }] });
+  if (!wasLeader && S.prefs.outbid) notify('You now lead "' + a.title + '" at ' + money(v) + '.');
+  addPoints(5, 'auction bid');
+  save(); renderAuctions(); renderInboxBadge(); toast('Bid placed — you lead! 🏆', 'ok');
+}
+window.placeBid = placeBid;
+function renderEvents() {
+  const g = $('#eventGrid'); if (!g) return;
+  const cats = ['All', 'Workshop', 'Fitness', 'Design', 'Finance'];
+  const ep = $('#eventPills');
+  if (ep && !ep.dataset.init) { ep.innerHTML = cats.map(c => '<button data-ep="' + c + '">' + c + '</button>').join(''); ep.dataset.init = '1'; }
+  const f = S.eventFilter || 'All';
+  $$('#eventPills button').forEach(b => { b.classList.toggle('active', b.dataset.ep === f); b.onclick = () => { S.eventFilter = b.dataset.ep; save(); renderEvents(); }; });
+  const list = S.events.filter(e => f === 'All' || e.tag === f);
+  g.innerHTML = list.map(e => {
+    const mine = S.tickets.find(t => t.id === e.id);
+    const pct = Math.min(100, Math.round(e.taken / e.seats * 100));
+    return '<div class="coach-card"><div class="coach-top"><div class="coach-av">' + e.img + '</div><div><b>' + esc(e.title) + '</b><div class="muted small">' + esc(e.host) + ' • ' + esc(e.when) + ' • ' + esc(e.tag) + '</div></div></div>' +
+      '<div style="padding:0 16px 16px"><p class="muted small">' + esc(e.desc) + '</p><div class="progress"><i style="width:' + pct + '%"></i></div><small class="muted">' + e.taken + '/' + e.seats + ' seats</small>' +
+      '<div class="p-actions" style="display:flex;gap:8px;margin-top:8px"><b>' + (e.price ? money(e.price) : 'FREE') + '</b><button class="btn primary" style="flex:1" data-rsvp="' + e.id + '">' + (mine ? '✓ Ticket — view' : 'RSVP →') + '</button></div></div></div>';
+  }).join('');
+  $$('#eventGrid [data-rsvp]').forEach(b => b.onclick = () => rsvpEvent(b.dataset.rsvp));
+  $('#myTickets').innerHTML = S.tickets.map(t => '<div class="ticket"><b>🎟 ' + esc(t.title) + '</b><div class="muted small">' + esc(t.when) + ' • code <b>' + t.code + '</b> • add to calendar ready</div></div>').join('') || '<div class="muted">No tickets yet.</div>';
+}
+function rsvpEvent(id) {
+  const e = S.events.find(x => x.id === id); if (!e) return;
+  if (S.tickets.find(t => t.id === id)) {
+    const t = S.tickets.find(t => t.id === id);
+    openModal('<h3>🎟 Your ticket</h3><div class="ticket"><b>' + esc(e.title) + '</b><div class="muted small">' + esc(e.when) + ' • host ' + esc(e.host) + '</div><div>Code: <b>' + t.code + '</b></div><div class="muted small">Recording lands in Inbox after the event.</div></div><button class="btn primary block" onclick="closeModal()">Done</button>');
+    return;
+  }
+  if (e.taken >= e.seats) { toast('Sold out — join waitlist in Inbox', 'err'); return; }
+  if (e.price > S.user.balance) { toast('Insufficient balance', 'err'); nav('wallet'); return; }
+  S.user.balance -= e.price; e.taken++;
+  const code = 'TCK-' + Math.random().toString(36).slice(2, 6).toUpperCase();
+  S.tickets.push({ id: e.id, title: e.title, when: e.when, code });
+  if (e.price) S.txs.unshift({ t: 'Event ticket — ' + e.title, a: -e.price, d: today(), k: 'out' });
+  addPoints(10, 'event RSVP');
+  notify('Ticket confirmed: ' + e.title + ' (' + code + ').');
+  save(); renderEvents(); updateWalletUI(); toast('You are in! 🎟', 'ok');
+}
+function renderRewardsBadge() {
+  const c = $('#pointsChip'); if (c) c.textContent = (S.points || 0) + ' pts';
+  if ($('#view-rewards') && $('#view-rewards').classList.contains('active')) renderRewards();
+}
+function renderRewards() {
+  if ($('#rwPoints')) $('#rwPoints').textContent = S.points || 0;
+  if ($('#rwStreak')) $('#rwStreak').textContent = (S.streak || 0) + ' days';
+  if ($('#pointsChip')) $('#pointsChip').textContent = (S.points || 0) + ' pts';
+  const defs = [
+    { id: 'welcome', n: 'Welcome', i: '👋', d: 'Joined Empower' }, { id: 'seller', n: 'First sale', i: '📦', d: 'Publish a listing' },
+    { id: 'coach', n: 'Coach mode', i: '🎓', d: 'Launch coach profile' }, { id: 'streak3', n: '3-day streak', i: '🔥', d: 'Check in 3 days' },
+    { id: 'bidder', n: 'Bidder', i: '⏳', d: 'Place an auction bid' }, { id: 'scholar', n: 'Scholar', i: '🎬', d: 'Finish a course' }
+  ];
+  const bg = $('#badgeGrid');
+  if (bg) bg.innerHTML = defs.map(b => '<div class="badge-card' + ((S.badges || []).indexOf(b.id) >= 0 ? '' : ' locked') + '"><span class="big">' + b.i + '</span><b>' + b.n + '</b><div class="muted small">' + b.d + '</div></div>').join('');
+  const rb = $('#redeemBox');
+  if (rb) rb.innerHTML = [{ pts: 100, ec: 5 }, { pts: 200, ec: 12 }, { pts: 500, ec: 35 }].map(r => '<div class="list-row"><div class="grow"><b>' + r.pts + ' pts → ' + r.ec + ' EC</b></div><button class="btn small primary" data-red="' + r.pts + '|' + r.ec + '"' + ((S.points || 0) < r.pts ? ' disabled' : '') + '>Redeem</button></div>').join('');
+  $$('#redeemBox [data-red]').forEach(b => b.onclick = () => {
+    const [p, e] = b.dataset.red.split('|').map(Number);
+    if ((S.points || 0) < p) return;
+    S.points -= p; S.user.balance += e;
+    S.txs.unshift({ t: 'Points redeemed (' + p + ' pts)', a: e, d: today(), k: 'in' });
+    save(); renderRewards(); updateWalletUI(); toast('+' + e + ' EC redeemed 🏆', 'ok');
+  });
+  const lb = $('#leaderList');
+  if (lb) {
+    const rows = [{ n: 'Maya Atelier', p: 1840 }, { n: 'Coach Priya', p: 1620 }, { n: 'Aisha B.', p: 1410 }, { n: S.user.name + ' (you)', p: 900 + (S.points || 0), me: true }, { n: 'Tom R.', p: 860 }];
+    rows.sort((a, b) => b.p - a.p);
+    lb.innerHTML = rows.map((r, i) => '<div class="list-row"><div class="thumb">' + (i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : '•') + '</div><div class="grow"><b>' + esc(r.n) + '</b></div><b>' + r.p + ' pts</b></div>').join('');
+    const rank = rows.findIndex(r => r.me) + 1;
+    if ($('#rwRank')) $('#rwRank').textContent = '#' + rank;
+  }
+}
+function renderSettings() {
+  if (!$('#setName')) return;
+  $('#setName').value = S.user.name || '';
+  $('#setEmoji').value = S.user.emoji || '';
+  $('#setEmail').value = S.user.email || '';
+  $('#setAddr').value = S.user.address || '';
+  $('#setCurrency').value = cur();
+  $('#setThemeLight').checked = S.theme === 'light';
+  $('#setNotifFeed').checked = !!(S.prefs || {}).feed;
+  $('#setNotifOutbid').checked = !!(S.prefs || {}).outbid;
+  $('#setNotifPrice').checked = !!(S.prefs || {}).pricedrop;
+  $('#payList').innerHTML = S.payMethods.map((m, i) => '<div class="list-row"><div class="grow"><b>' + esc(m) + '</b></div><button class="btn small danger" data-pay-del="' + i + '">Remove</button></div>').join('');
+  $$('#payList [data-pay-del]').forEach(b => b.onclick = () => { S.payMethods.splice(Number(b.dataset.payDel), 1); save(); renderSettings(); });
+}
+/* Ember assistant (rule-based, offline) */
+function emberReply(q) {
+  q = (q || '').toLowerCase();
+  const pick = (arr, n) => arr.slice().sort(() => Math.random() - 0.5).slice(0, n);
+  if (/(gift|under \$?50|present)/.test(q)) {
+    const list = S.products.filter(p => p.price <= 50 && !p.paused).slice(0, 3);
+    return { text: 'Cute — here are 3 crowd-pleasers under $50 with 14-day returns:', items: list.map(p => ({ label: p.img + ' ' + p.title + ' — ' + money(p.price), act: 'view:' + p.id })) };
+  }
+  if (/(store|sell|grow|income|side.hustle)/.test(q)) {
+    return { text: 'Fastest path I see: list one digital product this week, then book Alex for the $10k/mo playbook. Want me to open either?', items: [{ label: '＋ Open Seller Studio', act: 'nav:sell' }, { label: '🎓 Book Alex Morgan', act: 'coach:c1' }, { label: '🎬 Store Launch Sprint', act: 'course:k1' }] };
+  }
+  if (/(coach|fitness|career|design|business)/.test(q)) {
+    const cs = pick(S.coaches, 3);
+    return { text: 'Top matches for you right now:', items: cs.map(c => ({ label: c.img + ' ' + c.name + ' — ' + c.specialty + ' ' + money(c.rate) + '/hr', act: 'coach:' + c.id })) };
+  }
+  if (/(deal|cheap|discount|coupon)/.test(q)) {
+    return { text: 'Live deals end soon — biggest savings first:', items: S.deals.slice(0, 3).map(d => { const p = S.products.find(x => x.id === d.pid); return { label: '🔥 ' + p.title + ' −' + d.pct + '%', act: 'nav:deals' }; }).concat([{ label: 'Apply EMPOWER10', act: 'coupon:EMPOWER10' }]) };
+  }
+  if (/(auction|bid)/.test(q)) return { text: 'Auctions ending soonest — bid before they are gone:', items: S.auctions.slice().sort((a, b) => a.endsAt - b.endsAt).slice(0, 3).map(a => ({ label: '⏳ ' + a.title + ' — ' + money(a.bid), act: 'nav:auctions' })) };
+  if (/(event|workshop|live)/.test(q)) return { text: 'Upcoming events with seats left:', items: S.events.slice(0, 3).map(e => ({ label: '📅 ' + e.title + ' — ' + (e.price ? money(e.price) : 'FREE'), act: 'nav:events' })) };
+  if (/(track|order|refund|ship)/.test(q)) return { text: 'I can take you straight there:', items: [{ label: '📦 Open Orders & tracking', act: 'nav:orders' }, { label: '🛡️ Open a dispute', act: 'dispute:' }, { label: '✉️ Message support', act: 'nav:inbox' }] };
+  const hits = S.products.filter(p => q.split(/\s+/).some(w => w.length > 2 && (p.title + ' ' + p.category).toLowerCase().includes(w))).slice(0, 3);
+  if (hits.length) return { text: 'Found these for "' + q.slice(0, 32) + '":', items: hits.map(p => ({ label: p.img + ' ' + p.title + ' — ' + money(p.price), act: 'view:' + p.id })) };
+  return { text: 'I can help with shopping, selling, gigs, courses, coaches, auctions & events. Try one:', items: [{ label: '🔥 Show deals', act: 'nav:deals' }, { label: '⏳ Show auctions', act: 'nav:auctions' }, { label: '🎓 Match a coach', act: 'nav:coaches' }, { label: '＋ Start selling', act: 'nav:sell' }] };
+}
+function assistHandle(action) {
+  const [kind, val] = (action || '').split(':');
+  if (kind === 'view') { viewProduct(val); }
+  else if (kind === 'coach') { nav('coaches'); bookCoach(val); }
+  else if (kind === 'course') { nav('learn'); openCourse(val); }
+  else if (kind === 'coupon') { S.coupon = val; save(); updateCartUI(); toast(val + ' applied ✓', 'ok'); openCart(); }
+  else if (kind === 'dispute') { disputeModal(); }
+  else if (kind === 'nav') { nav(val || 'marketplace'); }
+}
+function assistAsk(text) {
+  const box = $('#assistChat'); if (!box) return;
+  const q = (text || '').trim(); if (!q) return;
+  box.innerHTML += '<div class="msg me">' + esc(q) + '</div>';
+  const r = emberReply(q);
+  box.innerHTML += '<div class="msg">✨ ' + esc(r.text) + (r.items ? '<div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px">' + r.items.map((it, i) => '<button class="btn small" data-ax="' + i + '">' + esc(it.label) + '</button>').join('') + '</div>' : '') + '</div>';
+  box.scrollTop = box.scrollHeight;
+  const btns = box.querySelectorAll('[data-ax]');
+  btns.forEach(b => b.onclick = () => assistHandle(r.items[Number(b.dataset.ax)].act));
+  const inp = $('#assistInput'); if (inp) inp.value = '';
+}
+/* Command palette */
+function paletteActions() {
+  return [
+    { n: 'Go: Marketplace', run: () => nav('marketplace') }, { n: 'Go: Deals', run: () => nav('deals') },
+    { n: 'Go: Auctions', run: () => nav('auctions') }, { n: 'Go: Services', run: () => nav('services') },
+    { n: 'Go: Learn', run: () => nav('learn') }, { n: 'Go: Events', run: () => nav('events') },
+    { n: 'Go: Coaches', run: () => nav('coaches') }, { n: 'Go: Community', run: () => nav('community') },
+    { n: 'Go: Sell', run: () => nav('sell') }, { n: 'Go: Dashboard', run: () => nav('dashboard') },
+    { n: 'Go: Orders', run: () => nav('orders') }, { n: 'Go: Inbox', run: () => nav('inbox') },
+    { n: 'Go: Rewards', run: () => nav('rewards') }, { n: 'Go: Wallet', run: () => nav('wallet') },
+    { n: 'Go: Settings', run: () => nav('settings') },
+    { n: 'Apply coupon EMPOWER10', run: () => { applyCoupon('EMPOWER10'); } },
+    { n: 'Toggle theme', run: () => { S.theme = S.theme === 'light' ? 'dark' : 'light'; save(); applyTheme(); } },
+    { n: 'Daily check-in', run: () => doCheckin() },
+    { n: 'Ask Ember', run: () => toggleAssist(true) }
+  ].concat(S.products.slice(0, 8).map(p => ({ n: 'View: ' + p.title, run: () => viewProduct(p.id) })));
+}
+function openPalette() { const r = $('#paletteRoot'); if (!r) return; r.hidden = false; const i = $('#paletteInput'); i.value = ''; drawPalette(''); setTimeout(() => i.focus(), 30); }
+function closePalette() { const r = $('#paletteRoot'); if (r) r.hidden = true; }
+function drawPalette(q) {
+  const list = $('#paletteList'); if (!list) return;
+  const acts = paletteActions().filter(a => a.n.toLowerCase().includes((q || '').toLowerCase())).slice(0, 12);
+  list.innerHTML = acts.map((a, i) => '<button data-pi="' + i + '">⚡ ' + esc(a.n) + '</button>').join('') || '<div class="muted" style="padding:12px">No matches.</div>';
+  $$('#paletteList [data-pi]').forEach(b => b.onclick = () => { closePalette(); acts[Number(b.dataset.pi)].run(); });
+}
+function toggleAssist(force) {
+  const p = $('#assistPanel'); if (!p) return;
+  const show = force === true ? true : p.hidden;
+  p.hidden = !show ? true : false;
+  if (show) {
+    p.hidden = false;
+    if (!p.dataset.init) {
+      p.dataset.init = '1';
+      $('#assistChat').innerHTML = '<div class="msg">✨ Hi, I am <b>Ember</b>. Tell me a budget, a goal, or what you are stuck on — I will pull the best of Empower for you.</div>';
+      $('#assistChips').innerHTML = ['Gift under $50', 'Grow my store', 'Find a coach', 'Show deals'].map(c => '<button data-chip="' + c + '">' + c + '</button>').join('');
+      $$('#assistChips [data-chip]').forEach(b => b.onclick = () => assistAsk(b.dataset.chip));
+    }
+  } else p.hidden = true;
+}
+function doCheckin() {
+  const day = new Date().toDateString();
+  if (S.lastCheckin === day) { toast('Already checked in — come back tomorrow 🔥', 'err'); nav('rewards'); return; }
+  const y = new Date(Date.now() - 86400000).toDateString();
+  S.streak = (S.lastCheckin === y) ? (S.streak || 0) + 1 : 1;
+  S.lastCheckin = day;
+  const bonus = 10 + Math.min(20, (S.streak || 1) * 2);
+  S.points = (S.points || 0) + bonus;
+  const b = S.badges = S.badges || [];
+  if (S.streak >= 3 && b.indexOf('streak3') < 0) b.push('streak3');
+  notify('Check-in day ' + S.streak + '! +' + bonus + ' pts.');
+  save(); renderRewards(); renderRewardsBadge(); toast('Checked in! +' + bonus + ' pts 🔥', 'ok');
+}
+window.doCheckin = doCheckin;
+
 /* ---------- events wiring ---------- */
 function wire() {
   $('#mobileMenuBtn').onclick = () => $('#mainNav').classList.toggle('open');
@@ -1187,6 +1488,8 @@ function wire() {
       S.products.unshift({ id: 'p' + Date.now(), title, category: f.get('category'), price, stock: Number(f.get('stock')), type: f.get('type'), img: f.get('image') || '📦', seller: S.user.name + ' (you)', rating: 5.0, reviews: 0, sold: 0, mine: true, paused: false, created: 99, desc: f.get('description') });
       S.feed.unshift('⚡ New listing: ' + title + ' for ' + money(price));
       notify('Your listing "' + title + '" is live!');
+      addPoints(25, 'listing published');
+      const bd = S.badges = S.badges || []; if (bd.indexOf('seller') < 0) bd.push('seller');
       toast('Listing is live! 🎉', 'ok');
     }
     save(); sf.reset(); $('#imgPreview').textContent = '📦'; updateFeeBox();
@@ -1211,6 +1514,8 @@ function wire() {
     S.coaches.unshift(mc); S.myCoach = mc;
     S.txs.unshift({ t: 'Coach welcome bonus', a: 25, d: today(), k: 'in' });
     S.user.balance += 25;
+    addPoints(20, 'coach profile live');
+    const bd2 = S.badges = S.badges || []; if (bd2.indexOf('coach') < 0) bd2.push('coach');
     notify('Coach profile live! You earned a 25 EC bonus.');
     save(); renderCoaches(); updateWalletUI();
     toast('Welcome, Coach! +25 EC 🎓', 'ok'); nav('coaches');
@@ -1247,7 +1552,58 @@ function wire() {
   $('#resetDemo').onclick = () => { if (!confirm('Reset all demo data?')) return; localStorage.removeItem(KEY); S = seed(); S.onboarded = true; save(); renderAll(); toast('Demo reset ✓'); };
   const fe = $('#footEscrow'); if (fe) fe.onclick = e => { e.preventDefault(); openModal('<h3>Escrow & returns</h3><p>Every payment is held in escrow and released only on confirmed delivery (or auto-released after 7 days). 14-day returns on physical goods. Digital goods: instant delivery + 48h refund window if broken.</p><button class="btn primary block" onclick="closeModal()">Got it</button>'); };
   const ffee = $('#footFees'); if (ffee) ffee.onclick = e => { e.preventDefault(); openModal('<h3>Fees — simple</h3><div class="list-row"><div class="grow"><b>Buyers</b><span>No fees, ever</span></div><span class="tag ok">$0</span></div><div class="list-row"><div class="grow"><b>Sellers</b><span>5% on sale only</span></div><span class="tag ok">5%</span></div><div class="list-row"><div class="grow"><b>Coaches</b><span>10% on bookings</span></div><span class="tag ok">10%</span></div><button class="btn primary block" style="margin-top:10px" onclick="closeModal()">Close</button>'); };
-  const fh = $('#footHelp'); if (fh) fh.onclick = e => { e.preventDefault(); openModal('<h3>Help center</h3><p class="muted">Coupon codes: EMPOWER10 (10%), WELCOME15 (15%). Press <b>/</b> to search. Data is stored locally — Reset demo restores everything.</p><button class="btn primary block" onclick="closeModal()">Close</button>'); };
+  const fh = $('#footHelp'); if (fh) fh.onclick = e => { e.preventDefault(); openModal('<h3>Help center</h3><p class="muted">Coupon codes: EMPOWER10 (10%), WELCOME15 (15%). Press <b>Ctrl+K</b> for commands, <b>/</b> to search. Data is stored locally — Settings → Backup keeps a copy.</p><button class="btn primary block" onclick="closeModal()">Close</button>'); };
+  const fh2 = $('#footHelp2'); if (fh2) fh2.onclick = e => { e.preventDefault(); nav('settings'); };
+  // v4 wiring
+  const na = $('#newAuctionBtn'); if (na) na.onclick = () => {
+    openModal('<h3>＋ List an auction</h3><label>Title<input id="naTitle" placeholder="e.g. Rare print, 1 of 20" /></label><div class="row2"><label>Starting bid<input id="naStart" type="number" value="50" min="1" /></label><label>Duration<select id="naDur"><option value="2">2 hours</option><option value="12">12 hours</option><option value="24">24 hours</option></select></label></div><label>Description<textarea id="naDesc" rows="2"></textarea></label><button class="btn primary block" id="naGo">Launch auction →</button>');
+    $('#naGo').onclick = () => {
+      const t = $('#naTitle').value.trim(); if (!t) { toast('Add a title', 'err'); return; }
+      const st = Number($('#naStart').value) || 20;
+      S.auctions.unshift({ id: 'a' + Date.now(), title: t, seller: S.user.name + ' (you)', img: '⏳', start: st, bid: st, bids: 0, endsAt: Date.now() + Number($('#naDur').value) * 3600000, watched: true, leader: '—', desc: $('#naDesc').value || 'Auction by ' + S.user.name });
+      addPoints(10, 'auction listed'); save(); closeModal(); renderAuctions(); toast('Auction live! ⏳', 'ok');
+    };
+  };
+  const ne = $('#newEventBtn'); if (ne) ne.onclick = () => {
+    openModal('<h3>＋ Host an event</h3><label>Title<input id="neTitle" placeholder="e.g. Live listing teardown" /></label><div class="row2"><label>Price (0 = free)<input id="nePrice" type="number" value="15" min="0" /></label><label>Seats<input id="neSeats" type="number" value="100" min="5" /></label></div><label>When<input id="neWhen" value="Oct 20 • 6PM CT" /></label><button class="btn primary block" id="neGo">Publish event →</button>');
+    $('#neGo').onclick = () => {
+      const t = $('#neTitle').value.trim(); if (!t) { toast('Add a title', 'err'); return; }
+      S.events.unshift({ id: 'e' + Date.now(), title: t, host: S.user.name, when: $('#neWhen').value || 'Soon', price: Number($('#nePrice').value) || 0, seats: Number($('#neSeats').value) || 50, taken: 0, img: '📅', tag: 'Workshop', desc: 'Hosted by ' + S.user.name });
+      save(); closeModal(); renderEvents(); toast('Event published! 📅', 'ok');
+    };
+  };
+  const ci = $('#checkinBtn'); if (ci) ci.onclick = doCheckin;
+  const ss = $('#saveSettingsBtn'); if (ss) ss.onclick = () => {
+    S.user.name = $('#setName').value.trim() || S.user.name;
+    S.user.emoji = $('#setEmoji').value.trim() || S.user.emoji;
+    S.user.email = $('#setEmail').value.trim() || S.user.email;
+    S.user.address = $('#setAddr').value.trim() || S.user.address;
+    if (S.addresses.indexOf(S.user.address) < 0) S.addresses.push(S.user.address);
+    S.user.currency = $('#setCurrency').value || 'USD';
+    S.theme = $('#setThemeLight').checked ? 'light' : 'dark';
+    S.prefs = { feed: $('#setNotifFeed').checked, outbid: $('#setNotifOutbid').checked, pricedrop: $('#setNotifPrice').checked };
+    save(); applyTheme(); renderAll(); toast('Settings saved ✓', 'ok');
+  };
+  const ap = $('#addPayBtn'); if (ap) ap.onclick = () => { const v = $('#newPayInput').value.trim(); if (!v) return; S.payMethods.push(v); $('#newPayInput').value = ''; save(); renderSettings(); toast('Payment method added ✓', 'ok'); };
+  const bb = $('#backupBtn'); if (bb) bb.onclick = () => {
+    const blob = new Blob([JSON.stringify(S)], { type: 'application/json' });
+    const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'empower-backup.json'; a.click(); toast('Backup downloaded ⬇', 'ok');
+  };
+  const rb2 = $('#restoreBtn'); if (rb2) rb2.onclick = () => $('#restoreFile').click();
+  const rf = $('#restoreFile'); if (rf) rf.onchange = () => {
+    const f = rf.files[0]; if (!f) return;
+    const r = new FileReader();
+    r.onload = () => { try { const d = JSON.parse(r.result); if (!d.products) throw 0; S = d; save(); renderAll(); toast('Backup restored ✓', 'ok'); } catch (e) { toast('Invalid backup file', 'err'); } };
+    r.readAsText(f);
+  };
+  const wb = $('#wipeBtn'); if (wb) wb.onclick = () => { if (!confirm('Reset everything?')) return; localStorage.removeItem(KEY); S = seed(); S.onboarded = true; save(); renderAll(); toast('Reset done ✓'); };
+  const nb = $('#newsBtn'); if (nb) nb.onclick = () => { const v = $('#newsInput').value.trim(); if (!v || v.indexOf('@') < 0) { toast('Enter a valid email', 'err'); return; } addPoints(5, 'newsletter'); save(); toast('Subscribed! +5 pts 🎉', 'ok'); $('#newsInput').value = ''; };
+  const af2 = $('#assistFab'); if (af2) af2.onclick = () => toggleAssist();
+  const ac = $('#assistClose'); if (ac) ac.onclick = () => toggleAssist(false);
+  const as = $('#assistSend'); if (as) as.onclick = () => assistAsk($('#assistInput').value);
+  const ai = $('#assistInput'); if (ai && !ai.dataset.bound) { ai.dataset.bound = '1'; ai.addEventListener('keydown', e => { if (e.key === 'Enter') assistAsk(ai.value); }); }
+  const pi = $('#paletteInput'); if (pi && !pi.dataset.bound) { pi.dataset.bound = '1'; pi.addEventListener('input', () => drawPalette(pi.value)); pi.addEventListener('keydown', e => { if (e.key === 'Enter') { const b = $('#paletteList button'); if (b) b.click(); } }); }
+  const pr = $('#paletteRoot'); if (pr && !pr.dataset.bound) { pr.dataset.bound = '1'; pr.addEventListener('click', e => { if (e.target === pr) closePalette(); }); }
 }
 
 /* ---------- live sim + init ---------- */
@@ -1256,18 +1612,65 @@ function liveSim() {
   const items = ['Leather Tote', 'Brush Pack', 'Mug Duo', 'Desk Lamp', 'Contract Kit'];
   setInterval(() => {
     if (document.hidden) return;
+    if (S.prefs && S.prefs.feed === false) return;
     S.feed.unshift('🔥 ' + names[Math.floor(Math.random() * names.length)] + ' just bought ' + items[Math.floor(Math.random() * items.length)]);
     S.feed = S.feed.slice(0, 12);
     const oc = $('#onlineCount');
     if (oc) oc.textContent = (12000 + Math.floor(Math.random() * 900)).toLocaleString();
     if ($('#view-marketplace').classList.contains('active')) { const f = $('#activityFeed'); if (f) f.innerHTML = S.feed.slice(0, 6).map(x => '<div class="feed-item">' + esc(x) + '</div>').join(''); }
   }, 15000);
+  // order progress ticker (demo): advance Processing orders over time
+  setInterval(() => {
+    let changed = false;
+    S.orders.forEach(o => {
+      if ((o.step || 0) < 3 && o.status !== 'Cancelled' && o.status !== 'Delivered' && Math.random() < 0.25) {
+        o.step = Math.min(3, (o.step || 0) + 1);
+        o.status = ['Processing', 'Shipped', 'Out for delivery', 'Delivered'][o.step];
+        changed = true;
+        if (o.step === 3) notify('Delivered: ' + o.title + ' — enjoy! Please rate it ★');
+      }
+    });
+    // auction countdown + endings
+    S.auctions.forEach(a => {
+      if (a.endsAt - Date.now() <= 0 && !a.settled) {
+        a.settled = true; changed = true;
+        if (a.leader === 'You') {
+          if (S.user.balance >= a.bid) {
+            S.user.balance -= a.bid;
+            S.orders.unshift({ id: uid('ORD'), title: 'Auction win: ' + a.title, img: a.img, qty: 1, total: a.bid, status: 'Processing', kind: 'bought', date: today(), step: 0 });
+            S.txs.unshift({ t: 'Auction win — ' + a.title, a: -a.bid, d: today(), k: 'out' });
+            addPoints(30, 'auction win');
+            notify('You WON "' + a.title + '" for ' + money(a.bid) + '! 🎉');
+          } else notify('Auction ended: "' + a.title + '" — insufficient balance, runner-up wins.');
+        }
+      }
+    });
+    if (changed) {
+      save();
+      if ($('#view-orders') && $('#view-orders').classList.contains('active')) renderOrders();
+      if ($('#view-auctions') && $('#view-auctions').classList.contains('active')) renderAuctions();
+      updateWalletUI();
+    }
+    tickAuctionTimes();
+  }, 5000);
+}
+function tickAuctionTimes() {
+  $$('[data-auc-t]').forEach(el => {
+    const a = S.auctions.find(x => x.id === el.dataset.aucT); if (!a) return;
+    const left = a.endsAt - Date.now();
+    el.textContent = left <= 0 ? 'ENDED' : fmtLeft(left);
+  });
 }
 function renderAll() {
   applyTheme(); syncPlus();
-  renderMarket(); renderDeals(); renderServices(); renderLearn(); renderCoaches(); renderCommunity(); renderInbox(); renderSell(); renderWallet(); renderOrders(); renderDashboard(); renderWishlist(); renderNotifBadge(); renderInboxBadge();
-  const h = (location.hash || '').replace('#/', '');
+  renderMarket(); renderDeals(); renderAuctions(); renderServices(); renderLearn(); renderEvents(); renderCoaches(); renderCommunity(); renderInbox(); renderRewards(); renderSell(); renderWallet(); renderOrders(); renderDashboard(); renderWishlist(); renderNotifBadge(); renderInboxBadge(); renderSettings();
+  const h = (location.hash || '').replace('#/', '').split('?')[0];
   if (h && VIEWS.indexOf(h) >= 0 && h !== 'marketplace') nav(h);
+  // auction bid modal helper: allow deep link ?item=
+  try {
+    const m = (location.hash || '').match(/item=([^&]+)/);
+    if (m) { const p = S.products.find(x => x.id === m[1]); if (p) viewProduct(p.id); }
+  } catch (e) {}
 }
 wire();
 renderAll();

@@ -5,12 +5,20 @@
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>Empower — Buy, Sell & Get Coached | Virtual Economic Platform</title>
 <meta name="description" content="Empower is the virtual economy for goods + coaching. Shop verified sellers, sell in 60 seconds, book vetted coaches, get paid in Empower Credits." />
+<meta property="og:title" content="Empower — Buy, Sell & Get Coached" />
+<meta property="og:description" content="One wallet for goods, gigs, courses, coaching + community. 1 EC = $1, escrow protected." />
+<meta property="og:type" content="website" />
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='22' fill='%237c3aed'/><text x='50' y='70' font-size='54' text-anchor='middle' fill='white' font-family='Arial' font-weight='bold'>E</text></svg>" />
+<link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='22' fill='%237c3aed'/><text x='50' y='70' font-size='54' text-anchor='middle' fill='white' font-family='Arial' font-weight='bold'>E</text></svg>" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Sora:wght@600;700;800&display=swap" rel="stylesheet" />
 <link rel="stylesheet" href="styles.css" />
 <link rel="manifest" href="manifest.json" />
 <meta name="theme-color" content="#0b0b14" />
 </head>
 <body>
+<a class="skip-link" href="#app">Skip to content</a>
 <div id="bg-blobs" aria-hidden="true"><span></span><span></span><span></span></div>
 
 <header class="topbar">
@@ -41,8 +49,10 @@
   <nav class="mainnav" id="mainNav">
     <button data-nav="marketplace" class="active">🛍 Marketplace</button>
     <button data-nav="deals">🔥 Deals</button>
+    <button data-nav="auctions">⏳ Auctions</button>
     <button data-nav="services">🛠️ Services</button>
     <button data-nav="learn">🎬 Learn</button>
+    <button data-nav="events">📅 Events</button>
     <button data-nav="coaches">🎓 Coaches</button>
     <button data-nav="community">💬 Community</button>
     <button data-nav="sell">＋ Sell</button>
@@ -50,8 +60,10 @@
     <button data-nav="dashboard">📊 Dashboard</button>
     <button data-nav="orders">📦 Orders</button>
     <button data-nav="inbox">✉️ Inbox</button>
+    <button data-nav="rewards">🏆 Rewards</button>
     <button data-nav="wishlist">♥ Wishlist</button>
     <button data-nav="wallet">◉ Wallet</button>
+    <button data-nav="settings">⚙️ Settings</button>
   </nav>
 </header>
 
@@ -121,6 +133,16 @@
     <div class="grid" id="dealsGrid"></div>
   </section>
 
+  <!-- AUCTIONS -->
+  <section class="view" id="view-auctions">
+    <div class="page-head"><div><h2>⏳ Live Auctions</h2><p>Bid in real time. Highest bid when the timer ends wins — escrowed automatically.</p></div>
+      <div class="page-head-actions"><span class="fee-chip">No reserve • Escrowed • Auto-refund if outbid</span>
+      <button class="btn primary" id="newAuctionBtn">＋ List an auction</button></div></div>
+    <div class="toolbar card-flat"><div class="pills" id="auctionPills"></div>
+      <div class="toolbar-right"><label class="check"><input type="checkbox" id="watchOnly" /> Watching only</label></div></div>
+    <div class="grid" id="auctionGrid"></div>
+  </section>
+
   <!-- SERVICES -->
   <section class="view" id="view-services">
     <div class="page-head"><div><h2>Hire a freelancer 🛠️</h2><p>Fixed-price gigs with escrow, revisions & on-time guarantees. Or post a request and let sellers come to you.</p></div>
@@ -137,6 +159,15 @@
       <div class="page-head-actions"><span class="fee-chip" id="learnStats">0 enrolled</span></div></div>
     <div class="grid" id="courseGrid"></div>
     <div class="card"><h3>My learning</h3><div id="myLearning"></div></div>
+  </section>
+
+  <!-- EVENTS -->
+  <section class="view" id="view-events">
+    <div class="page-head"><div><h2>📅 Live Events & Workshops</h2><p>Group coaching, drops, AMAs. RSVP with EC — recordings included.</p></div>
+      <div class="page-head-actions"><button class="btn primary" id="newEventBtn">＋ Host an event</button></div></div>
+    <div class="toolbar card-flat"><div class="pills" id="eventPills"></div></div>
+    <div class="grid" id="eventGrid"></div>
+    <div class="card"><h3>My tickets</h3><div id="myTickets"></div></div>
   </section>
 
   <!-- COACHES -->
@@ -294,6 +325,24 @@
     <div class="card"><div class="card-head"><h3>🛡️ Resolution center</h3><button class="btn small" id="newDisputeBtn">＋ Open dispute</button></div><div id="disputeList"></div></div>
   </section>
 
+  <!-- REWARDS -->
+  <section class="view" id="view-rewards">
+    <div class="page-head"><div><h2>🏆 Rewards & Streaks</h2><p>Earn points for buying, selling, learning & helping. Redeem for EC.</p></div>
+      <div class="page-head-actions"><span class="fee-chip" id="pointsChip">0 pts</span>
+      <button class="btn primary" id="checkinBtn">✓ Daily check-in</button></div></div>
+    <div class="cards3">
+      <div class="mini-stat"><small>Points</small><b id="rwPoints">0</b><span>100 pts = 5 EC</span></div>
+      <div class="mini-stat"><small>Streak</small><b id="rwStreak">0 days</b><span>check in daily</span></div>
+      <div class="mini-stat"><small>Rank</small><b id="rwRank">#4</b><span>this week</span></div>
+    </div>
+    <div class="split">
+      <div class="card"><h3>Badges</h3><div id="badgeGrid" class="badge-grid"></div>
+        <h3 style="margin-top:12px">Redeem</h3><div id="redeemBox"></div></div>
+      <div class="card"><h3>🏅 Weekly leaderboard</h3><div id="leaderList"></div>
+        <h3 style="margin-top:12px">How to earn</h3><div class="muted small">Buy +10 • Sell +25 • Book coach +20 • Finish lesson +15 • Post +5 • Win auction +30 • Check-in +10 (+streak bonus)</div></div>
+    </div>
+  </section>
+
   <!-- WISHLIST -->
   <section class="view" id="view-wishlist">
     <div class="page-head"><div><h2>Wishlist ♥</h2><p>Saved items + price-drop alerts.</p></div></div>
@@ -326,6 +375,36 @@
       <div class="card"><div class="card-head"><h3>Transactions</h3><select id="txFilter"><option value="All">All</option><option value="in">Money in</option><option value="out">Money out</option></select></div><div id="txList"></div></div>
     </div>
   </section>
+  <!-- SETTINGS -->
+  <section class="view" id="view-settings">
+    <div class="page-head"><div><h2>⚙️ Settings</h2><p>Profile, money, appearance, notifications & data.</p></div></div>
+    <div class="split">
+      <div class="card form"><h3>Profile</h3>
+        <label>Display name<input id="setName" /></label>
+        <div class="row2"><label>Avatar emoji<input id="setEmoji" maxlength="4" /></label><label>Email<input id="setEmail" /></label></div>
+        <label>Default address<input id="setAddr" /></label>
+        <label>Currency<select id="setCurrency"><option value="USD">USD $</option><option value="EUR">EUR €</option><option value="GBP">GBP £</option></select></label>
+        <button class="btn primary" id="saveSettingsBtn">Save settings →</button>
+      </div>
+      <div>
+        <div class="card"><h3>Appearance & notifications</h3>
+          <label class="check"><input type="checkbox" id="setThemeLight" /> Light theme</label>
+          <label class="check"><input type="checkbox" id="setNotifFeed" checked /> Live activity feed</label>
+          <label class="check"><input type="checkbox" id="setNotifOutbid" checked /> Outbid alerts</label>
+          <label class="check"><input type="checkbox" id="setNotifPrice" checked /> Price-drop alerts</label>
+          <h3 style="margin-top:12px">Payment methods</h3><div id="payList"></div>
+          <div style="display:flex;gap:8px;margin-top:8px"><input id="newPayInput" placeholder="e.g. Amex •• 1005" /><button class="btn small" id="addPayBtn">Add</button></div>
+        </div>
+        <div class="card"><h3>Data</h3>
+          <div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn small" id="backupBtn">⬇ Backup JSON</button><button class="btn small" id="restoreBtn">⬆ Restore</button><input type="file" id="restoreFile" accept="application/json" hidden /><button class="btn small danger" id="wipeBtn">Reset everything</button></div>
+          <p class="muted small">Backup includes products, orders, wallet, rewards & messages. Stored locally only.</p>
+          <h3>Help & status</h3><div class="muted small">● All systems live • v4.0 • <a href="#" id="footHelp2">Help center</a></div>
+          <label style="margin-top:8px">Newsletter<input id="newsInput" placeholder="you@email.com" /></label>
+          <button class="btn small primary" id="newsBtn" style="margin-top:8px">Subscribe → +5 pts</button>
+        </div>
+      </div>
+    </div>
+  </section>
 </main>
 
 <footer class="footer">
@@ -334,9 +413,9 @@
       <p class="muted small">The virtual economy for goods + coaching.<br />Demo build • data stored locally in your browser.</p></div>
     <div><b>Marketplace</b><a href="#/marketplace" data-nav="marketplace">Browse</a><a href="#/deals" data-nav="deals">Flash deals</a><a href="#/services" data-nav="services">Hire services</a><a href="#/learn" data-nav="learn">Courses</a><a href="#/sell" data-nav="sell">Sell an item</a><a href="#/wishlist" data-nav="wishlist">Wishlist</a></div>
     <div><b>Coaching</b><a href="#/coaches" data-nav="coaches">Find a coach</a><a href="#/become-coach" data-nav="become-coach">Become a coach</a><a href="#/community" data-nav="community">Community</a><a href="#/inbox" data-nav="inbox">Inbox & disputes</a></div>
-    <div><b>Trust</b><a href="#" id="footEscrow">Escrow & returns</a><a href="#" id="footFees">Fees</a><a href="#" id="footHelp">Help center</a></div>
+    <div><b>Trust</b><a href="#" id="footEscrow">Escrow & returns</a><a href="#" id="footFees">Fees</a><a href="#" id="footHelp">Help center</a><a href="#/settings" data-nav="settings">Settings & backup</a></div>
   </div>
-  <div class="foot-base muted small"><span>Seller protection • Escrow • Verified coaches • 2-day payouts</span><span>v3.0 expanded</span></div>
+  <div class="foot-base muted small"><span>Seller protection • Escrow • Verified coaches • 2-day payouts</span><span>v4.0 • press <b>Ctrl+K</b> for commands • <b>/</b> to search</span></div>
 </footer>
 
 <div class="overlay" id="overlay"></div>
@@ -363,6 +442,27 @@
 <div class="modal-root" id="modalRoot"></div>
 <div class="toast-root" id="toastRoot"></div>
 
+<button class="assist-fab" id="assistFab" aria-label="Ask Ember">✨<span>Ember</span></button>
+<aside class="assist-panel" id="assistPanel" aria-label="Ember assistant" hidden>
+  <div class="drawer-head"><div><h3 style="margin:0">✨ Ember — your earner assistant</h3><small class="muted">Recommends listings, gigs, coaches & deals</small></div><button class="icon-btn" id="assistClose">✕</button></div>
+  <div class="chat" id="assistChat" style="max-height:320px"></div>
+  <div class="assist-chips" id="assistChips"></div>
+  <div style="display:flex;gap:8px;padding:12px"><input id="assistInput" placeholder="e.g. gift under $50, grow my store…" /><button class="btn primary" id="assistSend">Ask</button></div>
+</aside>
+
+<div class="palette-root" id="paletteRoot" hidden>
+  <div class="palette"><input id="paletteInput" placeholder="Type a command or search… (esc to close)" autocomplete="off" /><div id="paletteList"></div></div>
+</div>
+
+<nav class="mobile-tabs" aria-label="Quick nav">
+  <button data-nav="marketplace">🛍<small>Shop</small></button>
+  <button data-nav="auctions">⏳<small>Bids</small></button>
+  <button data-nav="sell">＋<small>Sell</small></button>
+  <button data-nav="inbox">✉️<small>Inbox</small></button>
+  <button data-nav="wallet">◉<small>Wallet</small></button>
+</nav>
+
 <script src="app.js"></script>
+<script>if ('serviceWorker' in navigator) { window.addEventListener('load', () => { navigator.serviceWorker.register('sw.js').catch(() => {}); }); }</script>
 </body>
 </html>
