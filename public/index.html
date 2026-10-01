@@ -1,0 +1,114 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>A3 Console — Autonomous Business Solutions (Master Script v5.0)</title>
+<link rel="stylesheet" href="styles.css"/>
+</head>
+<body>
+<header>
+  <div>
+    <h1>Autonomous Business Console <span class="badge">A3 · Master Script v5.0</span></h1>
+    <p class="sub">Zero-human-intervention reference system · ≥90 days · ≥99.5% auto-resolution · 0 violations</p>
+  </div>
+  <div id="healthChip" class="health">health …</div>
+</header>
+<nav id="tabs">
+  <button data-t="constitution" class="on">1 Constitution</button>
+  <button data-t="standards">2 Standards</button>
+  <button data-t="domains">3 Domains</button>
+  <button data-t="data">4 Data Trust</button>
+  <button data-t="fleet">5 Fleet & Guard</button>
+  <button data-t="decide">6 Decisions</button>
+  <button data-t="ops">7 Ops & Healing</button>
+  <button data-t="gov">8 Governance</button>
+</nav>
+<main>
+<section id="t-constitution" class="tab on">
+  <h2>Constitution Studio — ART-1…ART-10</h2>
+  <p>Objective: <code>max E[Σ γ<sup>t</sup>R] s.t. C≤κ</code> · Envelope: <code>A={a | C≤κ ∧ R≤ρ ∧ I≥ι}</code> · Amendment: multi-sig 2-of-3 + 72h timelock + 10k-episode sandbox.</p>
+  <div class="grid2">
+    <div><h3>Provisions</h3><div id="arts"></div></div>
+    <div>
+      <h3>Evaluate action (deny→review→allow, &lt;10ms)</h3>
+      <label>Amount $ <input id="evAmount" type="number" value="45000"/></label>
+      <label>Reversibility 0-1 <input id="evRev" type="number" step="0.1" value="0.9"/></label>
+      <label>Confidence 0-1 <input id="evConf" type="number" step="0.05" value="0.88"/></label>
+      <label>Description <input id="evDesc" value="procurement order: lithium cells, counterparty ACME"/></label>
+      <button id="evGo">Evaluate</button>
+      <pre id="evOut"></pre>
+      <h3>Amendment simulator</h3>
+      <input id="amText" value="ART-2: lower max_single_transaction to 500000"/>
+      <button id="amGo">Simulate 10k episodes</button>
+      <pre id="amOut"></pre>
+    </div>
+  </div>
+</section>
+<section id="t-standards" class="tab">
+  <h2>Standards & Compliance Clock</h2>
+  <div class="grid2"><div><h3>NIST / ISO / IMDA</h3><pre id="stdNist"></pre>
+  <h3>Gartner L1–L4 + Authority ladder</h3><pre id="stdGart"></pre></div>
+  <div><h3>EU AI Act (Omnibus 2026/1744)</h3><div id="euCal"></div>
+  <p class="note">Dual-track: Art.5 + Art.50 now; Annex III conformity by 2027-12-02. NIST COSAiS overlays final ~2027 — runtime enforcement meanwhile.</p></div></div>
+</section>
+<section id="t-domains" class="tab">
+  <h2>Domain & Feasibility (A3 target: procurement &lt;$500K)</h2>
+  <div class="grid2"><div><h3>Domains</h3><div id="doms"></div></div>
+  <div><h3>Feasibility scorer</h3>
+    <label>p99 latency ms <input id="fLat" type="number" value="320"/></label>
+    <label>Irreversible % <input id="fIrr" type="number" value="5"/></label>
+    <label>Clarity 0–1 <input id="fCl" type="number" step="0.05" value="0.85"/></label>
+    <button id="fGo">Score</button><pre id="fOut"></pre>
+    <p class="note">Latency budget: real-time 10ms / transactional 500ms / operational 2s / strategic 30s. If &gt;10% irreversible → extra constraints. Clarity ≥0.8 for A3.</p>
+  </div></div>
+</section>
+<section id="t-data" class="tab">
+  <h2>Data Trust Pipeline</h2>
+  <p>gate → constitutional binding (ART-2/5/7) → PII redact (k=5) → DP ε≤10 → lineage → feature store</p>
+  <div class="grid2"><div>
+    <h3>Quality gate</h3>
+    <textarea id="dqIn" rows="4">{"order_id":"PO-881","amount":45000,"counterparty":"ACME","note":"contact jane@acme.com +1 555-0100"}</textarea>
+    <button id="dqGo">Validate</button><pre id="dqOut"></pre>
+    <h3>Lineage</h3><pre id="linOut"></pre>
+  </div><div>
+    <h3>PII redaction</h3><textarea id="piiIn" rows="3">Email Mr. Smith at jane@acme.com, SSN 123-45-6789, ZIP 94105</textarea>
+    <button id="piiGo">Redact</button><pre id="piiOut"></pre>
+    <h3>DP budget (Opacus noise 1.1)</h3><button id="dpGo">Check ε</button><pre id="dpOut"></pre>
+  </div></div>
+</section>
+<section id="t-fleet" class="tab">
+  <h2>Agent Fleet & Runtime Guard</h2>
+  <div class="grid2"><div><h3>Fleet (SPIFFE NHI, TTL≤24h)</h3><div id="fleet"></div></div>
+  <div><h3>Control plane</h3><div id="cp"></div>
+  <p class="note">Patterns: evidence-gate (deny→review→allow), reasoning/execution separation, VeriWeave govern, outcome receipts.</p></div></div>
+</section>
+<section id="t-decide" class="tab">
+  <h2>Decisions & Learning Lab (7-step pipeline)</h2>
+  <label>Agent <select id="dcAgent"><option>procurement-agent</option><option>treasury-agent</option><option>support-agent</option><option>compliance-agent</option><option>logistics-agent</option></select></label>
+  <label>Action <input id="dcDesc" value="auto-negotiate PO-881 at 45000"/></label>
+  <button id="dcGo">Run pipeline</button><pre id="dcOut"></pre>
+  <p class="note">DDI target 0.7–1.0 (Tier 4) · maturity L4-managed · learning ≥1 improvement/week · shadow disagreement &lt;10%.</p>
+</section>
+<section id="t-ops" class="tab">
+  <h2>Ops & Self-Healing — Autonomy Health v4</h2>
+  <div class="grid2"><div><h3>Health</h3><pre id="health"></pre></div>
+  <div><h3>Incident simulator</h3>
+    <select id="inKind"><option>model_drift</option><option>api_degradation</option><option>breach</option><option>counterparty_default</option></select>
+    <button id="inGo">Run playbook</button><pre id="inOut"></pre>
+    <h3>Audit ledger (Merkle, 7y)</h3><button id="auGo">Show last records</button><pre id="auOut"></pre>
+  </div></div>
+</section>
+<section id="t-gov" class="tab">
+  <h2>Governance Export — CI, liability, sunset</h2>
+  <div class="grid2"><div><h3>Governance-as-Code pipeline</h3><pre>validate → policy-sim(10k) → shadow 72h → canary 1% → full + auto-rollback</pre>
+  <h3>Self-audit checklist</h3><div id="chk"></div></div>
+  <div><h3>Deliverables (Phase 10)</h3><div id="del"></div>
+  <h3>Liability</h3><pre>tripartite 30/60/10 (developer/deployer/operator) · no AI personality · insurance $1.2B→$9.8B · chain-of-custody receipts</pre>
+  <h3>Sunset</h3><pre>6 conditions → graceful degradation → succession handoff → signed archive</pre></div></div>
+</section>
+</main>
+<footer>Built from Expanded Master Script v5.0 Consolidated · A3 deliverable standard · <a href="/api">/api</a> · <a href="/api/health">/api/health</a></footer>
+<script src="app.js"></script>
+</body>
+</html>
