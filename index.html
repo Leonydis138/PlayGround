@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Vantage-ARS — Autonomous Office OS</title>
+<meta name="description" content="Vantage-ARS autonomous AI office: receptionist, sales, marketing, accountant, technical, admin. Owner-approval gated. vantage-ars.co.za">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%233fb97f'/%3E%3Ctext x='16' y='23' font-size='18' font-weight='900' text-anchor='middle' fill='%2306121a'%3EV%3C/text%3E%3C/svg%3E">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<header class="topbar">
+  <div class="brand"><div class="logo">V</div><div>VANTAGE-ARS <span class="badge ai">AI OFFICE · A3</span><div class="sub">vantage-ars.co.za · Owner: Juan-louw Greyling · juanlouw.greyling@gmail.com</div></div></div>
+  <div class="top-actions">
+    <span id="ownerState" class="badge">owner mode: off</span>
+    <button id="ownerBtn" class="ghost">Owner sign-in</button>
+    <button id="exportBtn" class="ghost">Export audit</button>
+    <button id="haltBtn" class="danger">Halt all</button>
+  </div>
+</header>
+<div class="layout">
+  <nav class="side" id="nav">
+    <button data-tab="dash" class="active">Dashboard</button>
+    <button data-tab="approvals">Approvals <span class="count" id="cApprovals">0</span></button>
+    <button data-tab="inbox">Reception <span class="count" id="cLeads">0</span></button>
+    <button data-tab="marketing">Marketing</button>
+    <button data-tab="sales">Sales <span class="count" id="cQuotes">0</span></button>
+    <button data-tab="finance">Finance</button>
+    <button data-tab="tech">Technical <span class="count" id="cTickets">0</span></button>
+    <button data-tab="admin">Admin &amp; Tasks</button>
+    <button data-tab="audit">Audit &amp; Compliance</button>
+    <button data-tab="constitution">Constitution</button>
+    <button data-tab="settings">Settings &amp; Budgets</button>
+  </nav>
+  <main id="main"></main>
+</div>
+<div class="footer">Vantage-ARS Autonomous Office OS v1.0.0 · Author: Juan-louw Greyling &lt;juanlouw.greyling@gmail.com&gt; · Zero-budget start: every cost and every customer win/loss risk halts for owner approval · All customer-facing text is labelled AI-generated (EU AI Act Art.50 / POPIA) · Audit chain is hash-linked, retained 7 years · No demo data: the store starts empty and every record you create is real.</div>
+<script src="app.js"></script>
+</body>
+</html>
