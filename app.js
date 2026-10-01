@@ -1,5 +1,5 @@
-/* Empower v4.0 best-work — marketplace + deals + auctions + services + learn + events + community + inbox + rewards. Vanilla JS + localStorage. */
-const KEY = 'empower_state_v4';
+/* Empower v5.0 best-work — marketplace + deals + auctions + services + learn + events + community + inbox + rewards. Vanilla JS + localStorage. */
+const KEY = 'empower_state_v5';
 const CATS = ['All','Fashion','Tech','Digital','Art','Wellness','Home','Courses'];
 const COUPONS = { EMPOWER10: 0.10, WELCOME15: 0.15, COACH20: 0.20, PLUS25: 0.25 };
 const FX = { USD: { r: 1, s: '$' }, EUR: { r: 0.92, s: '€' }, GBP: { r: 0.79, s: '£' } };
@@ -25,13 +25,15 @@ function fmtLeft(ms) {
 
 function seed() {
   return {
-    v: 4,
+    v: 5,
     onboarded: false,
     theme: 'dark',
     prefs: { feed: true, outbid: true, pricedrop: true },
     addresses: ['123 Market St, Austin TX'],
     payMethods: ['Visa •• 4242', 'Bank •• 6789'],
     points: 120, streak: 2, lastCheckin: '', badges: ['welcome'],
+    recent: [], tasks: [], subs: [], affiliate: { code: 'JORDAN10', earned: 0, clicks: 0 },
+    goal: 3000,
     auctions: [
       { id: 'a1', title: 'Signed Atelier Tote — 1 of 50', seller: 'Maya Atelier', img: '👜', start: 80, bid: 132, bids: 14, endsAt: Date.now() + 5 * 3600 * 1000, watched: true, leader: 'Lena K.', desc: 'Numbered edition, hand-signed. Ships insured worldwide.' },
       { id: 'a2', title: 'Studio Test Pressing + Print', seller: 'Studio Kline', img: '🎨', start: 40, bid: 68, bids: 9, endsAt: Date.now() + 26 * 3600 * 1000, watched: false, leader: 'Tom R.', desc: 'Rare test pressing + A3 signed print. One owner.' },
@@ -143,12 +145,19 @@ let S;
 try {
   const raw = localStorage.getItem(KEY);
   S = raw ? JSON.parse(raw) : seed();
-  if (!S || S.v !== 4 || !Array.isArray(S.products)) {
+  if (!S || S.v !== 5 || !Array.isArray(S.products)) {
     const fresh = seed();
-    if (S && Array.isArray(S.products)) {
-      ['products', 'coaches', 'orders', 'sold', 'bookings', 'txs', 'cart', 'wishlist', 'notifs', 'reviews', 'coachReviews', 'messages', 'myCoach', 'deals', 'gigs', 'gigRequests', 'courses', 'posts', 'threads', 'disputes', 'giftCodes', 'following', 'user', 'coupon'].forEach(k => { if (S[k] !== undefined) fresh[k] = S[k]; });
-      fresh.onboarded = S.onboarded !== false;
-      fresh.theme = S.theme || 'dark';
+    // try migrate from v4/v3/v2 keys
+    let old = S;
+    try {
+      for (const k of ['empower_state_v4', 'empower_state_v3', 'empower_state_v2']) {
+        const r = localStorage.getItem(k);
+        if (r) { const d = JSON.parse(r); if (d && Array.isArray(d.products)) { old = d; break; } }
+      }
+    } catch (e) {}
+    if (old && Array.isArray(old.products)) {
+      ['products', 'coaches', 'orders', 'sold', 'bookings', 'txs', 'cart', 'wishlist', 'notifs', 'reviews', 'coachReviews', 'messages', 'myCoach', 'deals', 'gigs', 'gigRequests', 'courses', 'posts', 'threads', 'disputes', 'giftCodes', 'following', 'user', 'coupon', 'auctions', 'events', 'tickets', 'points', 'streak', 'badges', 'addresses', 'payMethods', 'prefs', 'theme', 'goal'].forEach(k => { if (old[k] !== undefined) fresh[k] = old[k]; });
+      fresh.onboarded = old.onboarded !== false;
     }
     S = fresh;
   }
@@ -164,6 +173,11 @@ S.polls = S.polls || seed().polls;
 S.auctions = S.auctions || seed().auctions;
 S.events = S.events || seed().events;
 S.tickets = S.tickets || [];
+S.recent = S.recent || [];
+S.tasks = S.tasks || [];
+S.subs = S.subs || [];
+S.affiliate = S.affiliate || { code: 'JORDAN10', earned: 0, clicks: 0 };
+S.goal = S.goal || 3000;
 const save = () => { try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) {} };
 function applyTheme() { document.documentElement.dataset.theme = S.theme === 'light' ? 'light' : ''; const b = $('#themeBtn'); if (b) b.textContent = S.theme === 'light' ? '☀️' : '🌙'; }
 
@@ -290,6 +304,7 @@ function renderMarket() {
   $$('#productGrid [data-offer]').forEach(b => b.onclick = () => makeOffer(b.dataset.offer));
   $$('#productGrid [data-seller]').forEach(b => b.onclick = e => { e.preventDefault(); sellerStore(b.dataset.seller); });
   $('#activityFeed').innerHTML = S.feed.slice(0, 6).map(f => '<div class="feed-item">' + esc(f) + '</div>').join('');
+  renderRails();
   const sel = $('#sortSelect'); if (sel) sel.value = S.sort;
   const tf = $('#typeFilter'); if (tf) tf.value = S.type;
   const pf = $('#priceFilter'); if (pf) pf.value = String(S.maxPrice);
@@ -312,6 +327,7 @@ function variantsFor(p) {
 }
 function viewProduct(id) {
   const p = S.products.find(x => x.id === id); if (!p) return;
+  trackRecent(id);
   const revs = S.reviews[id] || [];
   const qas = S.qa[id] || [];
   const related = S.products.filter(x => x.id !== id && x.category === p.category && !x.paused).slice(0, 3);
@@ -769,20 +785,25 @@ function renderDashboard() {
   $('#dWallet').textContent = ec(S.user.balance);
   $('#dSold').textContent = mine.reduce((s, p) => s + p.sold, 0) + 37;
   $('#dBookings').textContent = S.bookings.length;
-  const goal = 3000, pct = Math.min(100, Math.round(rev / goal * 100));
+  const goal = S.goal || 3000, pct = Math.min(100, Math.round(rev / goal * 100));
   $('#goalLabel').textContent = 'Monthly goal — ' + money(goal) + ' (' + pct + '%)';
   $('#goalSub').textContent = money(Math.max(0, goal - rev)) + ' to go • on pace ✓';
   $('#goalBar').style.width = pct + '%';
+  const gi = $('#goalInput'); if (gi && !gi.dataset.b) { gi.dataset.b = '1'; gi.value = goal; }
   drawChart();
   const top = S.products.slice().sort((a, b) => b.sold - a.sold).slice(0, 3);
   $('#topProducts').innerHTML = '<h4 style="margin:12px 0 4px">Top products</h4>' + top.map(p => '<div class="list-row"><div class="thumb">' + imgHTML(p) + '</div><div class="grow"><b>' + esc(p.title) + '</b><span>' + p.sold + ' sold</span></div><b>' + money(p.price * p.sold * 0.95) + '</b></div>').join('');
   const shipDue = S.orders.filter(o => o.status === 'Processing').length;
-  $('#todoList').innerHTML = [
+  const baseTodos = [
     shipDue ? '📦 Ship ' + shipDue + ' order(s) — due today' : '✓ All caught up on shipping',
     '💬 Reply to buyer questions (avg reply 2h → +22% sales)',
     S.bookings.length ? '📅 Prep for ' + S.bookings[0].coach + ' — ' + S.bookings[0].when : '🎓 Book a coach to grow faster',
     '💸 Available to cash out: ' + ec(S.user.balance)
-  ].map(t => '<div class="list-row"><div class="grow"><b>' + esc(t) + '</b></div></div>').join('');
+  ];
+  const custom = (S.tasks || []).map((t, i) => ({ custom: true, i, t }));
+  $('#todoList').innerHTML = baseTodos.map(t => '<div class="list-row"><div class="grow"><b>' + esc(t) + '</b></div></div>').join('') +
+    custom.map(c => '<div class="list-row"><div class="grow"><b>☐ ' + esc(c.t) + '</b></div><button class="btn small" data-done="' + c.i + '">Done</button></div>').join('');
+  $$('#todoList [data-done]').forEach(b => b.onclick = () => { S.tasks.splice(Number(b.dataset.done), 1); addPoints(5, 'task done'); save(); renderDashboard(); });
   const ce = $('#coachEarnBox');
   if (ce) ce.innerHTML = S.myCoach ? '<div class="list-row"><div class="thumb">' + S.myCoach.img + '</div><div class="grow"><b>' + esc(S.myCoach.name) + '</b><span>' + S.bookings.filter(b => b.coachId === S.myCoach.id).length + ' sessions • 90% payout</span></div><b>' + money(coachRev) + '</b></div>' : '<div class="muted small">Not a coach yet? <a href="#/become-coach" data-nav="become-coach">Launch your profile</a> and keep 90%.</div>';
   $('#recentActivity').innerHTML = S.txs.slice(0, 6).map(t => '<div class="list-row"><div class="thumb">' + (t.k === 'in' ? '💰' : '💸') + '</div><div class="grow"><b>' + esc(t.t) + '</b><span>' + esc(t.d) + (t.note ? ' • ' + esc(t.note) : '') + '</span></div><b style="color:' + (t.a > 0 ? 'var(--green)' : t.a < 0 ? 'var(--txt)' : 'var(--mut)') + '">' + (t.a === 0 ? '—' : (t.a > 0 ? '+' : '−') + money(Math.abs(t.a))) + '</b></div>').join('');
@@ -817,6 +838,11 @@ function renderWallet() {
   const list = S.txs.filter(t => f === 'All' || t.k === f);
   $('#txList').innerHTML = list.map(t => '<div class="list-row"><div class="thumb">' + (t.k === 'in' ? '💰' : '💸') + '</div><div class="grow"><b>' + esc(t.t) + '</b><span>' + esc(t.d) + (t.note ? ' • ' + esc(t.note) : '') + '</span></div><b style="color:' + (t.a > 0 ? 'var(--green)' : t.a < 0 ? 'var(--txt)' : 'var(--mut)') + '">' + (t.a === 0 ? '—' : (t.a > 0 ? '+' : '−') + money(Math.abs(t.a))) + '</b></div>').join('') || '<div class="muted">No transactions in this filter.</div>';
   const tf = $('#txFilter'); if (tf) tf.value = f;
+  const ac = $('#affCode'); if (ac) ac.textContent = (S.affiliate || {}).code || 'JORDAN10';
+  const as = $('#affStats'); if (as) as.textContent = ((S.affiliate || {}).clicks || 0) + ' clicks • ' + money((S.affiliate || {}).earned || 0) + ' earned';
+  const sb = $('#subsBox');
+  if (sb) sb.innerHTML = (S.subs || []).map((s, i) => '<div class="list-row"><div class="thumb">🔁</div><div class="grow"><b>' + esc(s.title) + '</b><span>every ' + esc(s.every) + ' • ' + money(s.price) + '</span></div><button class="btn small danger" data-sub-del="' + i + '">Cancel</button></div>').join('') || '<div class="muted small">No subscriptions. Subscribe to consumables and never run out.</div>';
+  $$('#subsBox [data-sub-del]').forEach(b => b.onclick = () => { S.subs.splice(Number(b.dataset.subDel), 1); save(); renderWallet(); toast('Subscription cancelled'); });
 }
 function updateWalletUI() {
   if ($('#walletBalanceTop')) $('#walletBalanceTop').textContent = ec(S.user.balance);
@@ -846,25 +872,44 @@ function txCSV() {
 
 /* ---------- onboarding / profile / help ---------- */
 function maybeOnboard() {
-  if (S.onboarded) return;
-  let goal = 'sell';
-  openModal('<h3>Welcome to Empower ⚡</h3><p class="muted">The virtual economy where you buy, sell & get coached. What is your main goal?</p>' +
-    '<div class="onboard-goals"><button data-g="buy">🛍<br /><b>Buy</b><br /><small>Shop deals</small></button>' +
-    '<button data-g="sell" class="sel">📦<br /><b>Sell</b><br /><small>Earn income</small></button>' +
-    '<button data-g="coach">🎓<br /><b>Coach</b><br /><small>Monetize skills</small></button></div>' +
-    '<label>Your name<input id="obName" value="Jordan Doe" /></label>' +
-    '<button class="btn primary block" id="obGo">Enter Empower → +50 EC welcome gift</button>');
-  $$('#modalRoot [data-g]').forEach(b => b.onclick = () => { goal = b.dataset.g; $$('#modalRoot [data-g]').forEach(x => x.classList.remove('sel')); b.classList.add('sel'); });
-  $('#obGo').onclick = () => {
-    S.user.name = $('#obName').value.trim() || 'Jordan Doe';
-    S.user.balance += 50;
-    S.txs.unshift({ t: 'Welcome gift', a: 50, d: today(), k: 'in' });
-    S.onboarded = true;
-    notify('Welcome gift: +50 EC. ' + (goal === 'sell' ? 'Publish your first listing to start earning.' : goal === 'coach' ? 'Launch your coach profile to get booked.' : 'Use EMPOWER10 for 10% off your first order.'));
-    save(); closeModal(); renderAll(); updateWalletUI();
-    toast('Welcome! +50 EC gift 🎉', 'ok');
-    nav(goal === 'buy' ? 'marketplace' : goal === 'sell' ? 'sell' : 'become-coach');
-  };
+  if (S.onboarded) { const b = $('#welcomeBanner'); if (b) b.hidden = true; return; }
+  // Non-blocking welcome banner instead of auto-modal (fixes "layer blocks landing" complaint)
+  let bar = $('#welcomeBanner');
+  if (!bar) {
+    bar = document.createElement('div');
+    bar.id = 'welcomeBanner';
+    bar.className = 'welcome-banner';
+    const app = $('#app');
+    if (app) app.prepend(bar);
+    else return;
+  }
+  bar.hidden = false;
+  bar.innerHTML = '<div><b>👋 Welcome to Empower</b><span class="muted"> — pick a path, get <b>+50 EC</b>. Or explore freely, no popup will trap you.</span></div>' +
+    '<div class="welcome-actions"><button class="btn small primary" data-wg="buy">🛍 Shop</button>' +
+    '<button class="btn small" data-wg="sell">📦 Sell</button>' +
+    '<button class="btn small" data-wg="coach">🎓 Coach</button>' +
+    '<button class="btn small ghost" data-wg="skip">Skip →</button></div>';
+  bar.querySelectorAll('[data-wg]').forEach(b => b.onclick = () => {
+    const g = b.dataset.wg;
+    if (g === 'skip') { S.onboarded = true; save(); bar.hidden = true; toast('Explore freely — welcome bar dismissed', 'ok'); return; }
+    let goal = g;
+    openModal('<h3>Welcome to Empower ⚡</h3><p class="muted">The virtual economy where you buy, sell & get coached. Confirm to claim <b>+50 EC</b>.</p>' +
+      '<label>Your name<input id="obName" value="' + esc(S.user.name || 'Jordan Doe') + '" /></label>' +
+      '<div style="display:flex;gap:8px"><button class="btn ghost" id="obSkip" style="flex:1">Explore first</button>' +
+      '<button class="btn primary" id="obGo" style="flex:2">Claim +50 EC →</button></div>' +
+      '<p class="muted small">No trap: you can close this anytime with ✕, Esc, or clicking outside.</p>');
+    $('#obSkip').onclick = () => { S.onboarded = true; save(); closeModal(); bar.hidden = true; };
+    $('#obGo').onclick = () => {
+      S.user.name = ($('#obName').value || '').trim() || 'Jordan Doe';
+      S.user.balance += 50;
+      S.txs.unshift({ t: 'Welcome gift', a: 50, d: today(), k: 'in' });
+      S.onboarded = true;
+      notify('Welcome gift: +50 EC. ' + (goal === 'sell' ? 'Publish your first listing to start earning.' : goal === 'coach' ? 'Launch your coach profile to get booked.' : 'Use EMPOWER10 for 10% off your first order.'));
+      save(); closeModal(); bar.hidden = true; renderAll(); updateWalletUI();
+      toast('Welcome! +50 EC gift 🎉', 'ok');
+      nav(goal === 'buy' ? 'marketplace' : goal === 'sell' ? 'sell' : 'become-coach');
+    };
+  });
 }
 function profileModal() {
   openModal('<h3>' + esc(S.user.emoji) + ' ' + esc(S.user.name) + '</h3><p class="muted small">' + esc(S.user.email) + ' • Member since ' + esc(S.user.memberSince) + ' • <span class="tag ok">Gold seller • 4.9★</span></p>' +
@@ -1398,6 +1443,66 @@ function doCheckin() {
 }
 window.doCheckin = doCheckin;
 
+/* ---------- v5: discovery rails / bundles / subscriptions / affiliate / live / tasks ---------- */
+function trackRecent(id) {
+  S.recent = [id].concat((S.recent || []).filter(x => x !== id)).slice(0, 10);
+  save(); renderRails();
+}
+function renderRails() {
+  const tr = $('#trendRail');
+  if (tr) {
+    const top = S.products.filter(p => !p.paused).slice().sort((a, b) => (b.sold / Math.max(1, b.price)) - (a.sold / Math.max(1, a.price))).slice(0, 8);
+    tr.innerHTML = top.map(p => '<div class="mini-card" data-tr-v="' + p.id + '"><div class="thumb">' + imgHTML(p) + '</div><div class="grow"><b>' + esc(p.title.slice(0, 28)) + '</b><span>🔥 ' + p.sold.toLocaleString() + ' sold • ' + money(p.price) + '</span></div></div>').join('');
+    $$('#trendRail [data-tr-v]').forEach(b => b.onclick = () => viewProduct(b.dataset.trV));
+  }
+  const rr = $('#recentRail');
+  if (rr) {
+    const list = (S.recent || []).map(id => S.products.find(p => p.id === id)).filter(Boolean);
+    rr.innerHTML = list.map(p => '<div class="mini-card" data-rc-v="' + p.id + '"><div class="thumb">' + imgHTML(p) + '</div><div class="grow"><b>' + esc(p.title.slice(0, 28)) + '</b><span>' + money(p.price) + '</span></div></div>').join('') || '<div class="muted small">Views you open will appear here.</div>';
+    $$('#recentRail [data-rc-v]').forEach(b => b.onclick = () => viewProduct(b.dataset.rcV));
+    const cb = $('#clearRecentBtn'); if (cb && !cb.dataset.b) { cb.dataset.b = '1'; cb.onclick = () => { S.recent = []; save(); renderRails(); }; }
+  }
+  const br = $('#bundleRail');
+  if (br) {
+    const pairs = [['p3', 'p11'], ['p6', 'p12'], ['p2', 'p8']];
+    br.innerHTML = pairs.map(([a, b]) => {
+      const pa = S.products.find(x => x.id === a), pb = S.products.find(x => x.id === b);
+      if (!pa || !pb) return '';
+      const tot = pa.price + pb.price, deal = Math.round(tot * 0.85 * 100) / 100;
+      return '<div class="mini-card" data-bun="' + a + '|' + b + '"><div class="thumb">' + pa.img + pb.img + '</div><div class="grow"><b>' + esc(pa.title.slice(0, 18)) + ' + ' + esc(pb.title.slice(0, 18)) + '</b><span><s>' + money(tot) + '</s> <b>' + money(deal) + '</b> save 15%</span></div></div>';
+    }).join('');
+    $$('#bundleRail [data-bun]').forEach(el => el.onclick = () => {
+      const [a, b] = el.dataset.bun.split('|');
+      [a, b].forEach(id => { const l = S.cart.find(c => c.id === id); if (l) l.qty++; else S.cart.push({ id, qty: 1 }); });
+      S.coupon = null;
+      S.dealOverride = S.dealOverride || {};
+      // bundle discount via extra 15% coupon-like path: store as coupon WELCOME15-ish? use fixed extra
+      S.bundlePct = 0.15;
+      save(); updateCartUI(); openCart(); toast('Bundle added — 15% off applied 🎁', 'ok');
+    });
+  }
+}
+// bundle-aware discount
+const _cartDiscountV4 = cartDiscount;
+cartDiscount = function (sub) {
+  let d = _cartDiscountV4(sub);
+  if (S.bundlePct) d += sub * S.bundlePct;
+  return Math.min(d, sub * 0.6);
+};
+function renderSubsBox() {
+  // subscriptions entry on product modal for consumables + services upsell
+  return '';
+}
+function liveShopModal() {
+  const live = S.products.filter(p => !p.paused).slice(0, 5);
+  openModal('<h3>📣 Live Drop — Friday 6PM CT</h3><p class="muted small">Deals unlock while live. RSVP free, we ping you.</p>' +
+    live.map(p => '<div class="list-row"><div class="thumb">' + imgHTML(p) + '</div><div class="grow"><b>' + esc(p.title) + '</b><span>' + money(p.price) + ' • live price drops 10%</span></div><button class="btn small primary" data-live-add="' + p.id + '">＋</button></div>').join('') +
+    '<div style="display:flex;gap:8px;margin-top:10px"><button class="btn" style="flex:1" onclick="closeModal()">Later</button><button class="btn primary" style="flex:2" id="liveRsvp">RSVP — remind me</button></div>', true);
+  $$('#modalRoot [data-live-add]').forEach(b => b.onclick = () => addToCart(b.dataset.liveAdd));
+  $('#liveRsvp').onclick = () => { notify('Live drop RSVP confirmed — Friday 6PM CT.'); addPoints(5, 'live RSVP'); save(); closeModal(); toast('RSVP confirmed! We will ping you 📣', 'ok'); };
+}
+window.liveShopModal = liveShopModal;
+
 /* ---------- events wiring ---------- */
 function wire() {
   $('#mobileMenuBtn').onclick = () => $('#mainNav').classList.toggle('open');
@@ -1598,6 +1703,23 @@ function wire() {
   };
   const wb = $('#wipeBtn'); if (wb) wb.onclick = () => { if (!confirm('Reset everything?')) return; localStorage.removeItem(KEY); S = seed(); S.onboarded = true; save(); renderAll(); toast('Reset done ✓'); };
   const nb = $('#newsBtn'); if (nb) nb.onclick = () => { const v = $('#newsInput').value.trim(); if (!v || v.indexOf('@') < 0) { toast('Enter a valid email', 'err'); return; } addPoints(5, 'newsletter'); save(); toast('Subscribed! +5 pts 🎉', 'ok'); $('#newsInput').value = ''; };
+  const an = $('#announceCoupon'); if (an) an.onclick = () => { applyCoupon('EMPOWER10'); openCart(); };
+  const gs2 = $('#goalSave'); if (gs2) gs2.onclick = () => { const v = Number($('#goalInput').value); if (!v || v < 100) { toast('Goal must be $100+', 'err'); return; } S.goal = v; save(); renderDashboard(); toast('Goal set to ' + money(v), 'ok'); };
+  const at = $('#addTaskBtn'); if (at) at.onclick = () => {
+    openModal('<h3>＋ New task</h3><input id="taskIn" placeholder="e.g. Shoot product photos" /><button class="btn primary block" id="taskGo" style="margin-top:8px">Add task</button>');
+    $('#taskGo').onclick = () => { const v = $('#taskIn').value.trim(); if (!v) return; S.tasks.push(v); save(); closeModal(); renderDashboard(); toast('Task added ✓', 'ok'); };
+  };
+  const lb = $('#liveShopBtn'); if (lb) lb.onclick = liveShopModal;
+  const ac2 = $('#affCopy'); if (ac2) ac2.onclick = () => { const link = location.origin + location.pathname + '?ref=' + ((S.affiliate || {}).code || 'JORDAN10'); try { navigator.clipboard.writeText(link); } catch (e) {} S.affiliate.clicks++; save(); renderWallet(); toast('Affiliate link copied 🔗', 'ok'); };
+  const as2 = $('#affSim'); if (as2) as2.onclick = () => { S.affiliate.earned += 2; S.user.balance += 2; S.txs.unshift({ t: 'Affiliate payout', a: 2, d: today(), k: 'in' }); save(); renderWallet(); updateWalletUI(); toast('+$2 affiliate payout 🎉', 'ok'); };
+  const asub = $('#addSubBtn'); if (asub) asub.onclick = () => {
+    openModal('<h3>🔁 Subscribe & save 10%</h3><label>Product<select id="subPid">' + S.products.filter(p => p.type === 'Physical').slice(0, 8).map(p => '<option value="' + p.id + '">' + esc(p.title) + ' — ' + money(p.price) + '</option>').join('') + '</select></label><label>Every<select id="subEvery"><option>30 days</option><option>60 days</option><option>90 days</option></select></label><button class="btn primary block" id="subGo">Subscribe — 10% off →</button>');
+    $('#subGo').onclick = () => {
+      const p = S.products.find(x => x.id === $('#subPid').value);
+      S.subs.push({ title: p.title, every: $('#subEvery').value, price: Math.round(p.price * 0.9 * 100) / 100 });
+      save(); closeModal(); renderWallet(); toast('Subscribed — 10% off every order 🔁', 'ok');
+    };
+  };
   const af2 = $('#assistFab'); if (af2) af2.onclick = () => toggleAssist();
   const ac = $('#assistClose'); if (ac) ac.onclick = () => toggleAssist(false);
   const as = $('#assistSend'); if (as) as.onclick = () => assistAsk($('#assistInput').value);

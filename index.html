@@ -20,6 +20,7 @@
 <body>
 <a class="skip-link" href="#app">Skip to content</a>
 <div id="bg-blobs" aria-hidden="true"><span></span><span></span><span></span></div>
+<div class="announce" id="announceBar">⚡ Flash week: extra 10% off with <button class="linklike" id="announceCoupon">EMPOWER10</button> • Free shipping over $75 • <a href="#/auctions" data-nav="auctions">Live auctions ending soon →</a></div>
 
 <header class="topbar">
   <div class="topbar-inner">
@@ -46,24 +47,32 @@
       <button class="avatar-btn" id="userBtn" aria-label="Account">JD</button>
     </div>
   </div>
-  <nav class="mainnav" id="mainNav">
-    <button data-nav="marketplace" class="active">🛍 Marketplace</button>
-    <button data-nav="deals">🔥 Deals</button>
-    <button data-nav="auctions">⏳ Auctions</button>
-    <button data-nav="services">🛠️ Services</button>
-    <button data-nav="learn">🎬 Learn</button>
-    <button data-nav="events">📅 Events</button>
-    <button data-nav="coaches">🎓 Coaches</button>
-    <button data-nav="community">💬 Community</button>
-    <button data-nav="sell">＋ Sell</button>
-    <button data-nav="become-coach">★ Become a Coach</button>
-    <button data-nav="dashboard">📊 Dashboard</button>
-    <button data-nav="orders">📦 Orders</button>
-    <button data-nav="inbox">✉️ Inbox</button>
-    <button data-nav="rewards">🏆 Rewards</button>
-    <button data-nav="wishlist">♥ Wishlist</button>
-    <button data-nav="wallet">◉ Wallet</button>
-    <button data-nav="settings">⚙️ Settings</button>
+  <nav class="mainnav grouped" id="mainNav" aria-label="Primary">
+    <div class="nav-group"><span class="nav-label">Shop</span><div class="nav-row">
+      <button data-nav="marketplace" class="active">🛍 Marketplace</button>
+      <button data-nav="deals">🔥 Deals</button>
+      <button data-nav="auctions">⏳ Auctions</button>
+      <button data-nav="services">🛠️ Services</button>
+      <button data-nav="learn">🎬 Learn</button>
+      <button data-nav="events">📅 Events</button>
+    </div></div>
+    <div class="nav-group"><span class="nav-label">Earn</span><div class="nav-row">
+      <button data-nav="sell">＋ Sell</button>
+      <button data-nav="become-coach">★ Become a Coach</button>
+      <button data-nav="dashboard">📊 Dashboard</button>
+    </div></div>
+    <div class="nav-group"><span class="nav-label">Connect</span><div class="nav-row">
+      <button data-nav="coaches">🎓 Coaches</button>
+      <button data-nav="community">💬 Community</button>
+      <button data-nav="inbox">✉️ Inbox</button>
+      <button data-nav="rewards">🏆 Rewards</button>
+    </div></div>
+    <div class="nav-group"><span class="nav-label">Manage</span><div class="nav-row">
+      <button data-nav="orders">📦 Orders</button>
+      <button data-nav="wishlist">♥ Wishlist</button>
+      <button data-nav="wallet">◉ Wallet</button>
+      <button data-nav="settings">⚙️ Settings</button>
+    </div></div>
   </nav>
 </header>
 
@@ -122,7 +131,10 @@
       </div>
     </div>
     <div class="result-line"><span id="resultCount"></span><span class="muted" id="couponHint">Try code <button class="linklike" id="couponApplyHint">EMPOWER10</button> for 10% off</span></div>
+    <div class="rail-wrap"><div class="rail-head"><h3>🔥 Trending now</h3><button class="linklike" data-nav="deals">View deals →</button></div><div class="rail" id="trendRail"></div></div>
     <div class="grid" id="productGrid"></div>
+    <div class="rail-wrap"><div class="rail-head"><h3>🕘 Recently viewed</h3><button class="linklike" id="clearRecentBtn">Clear</button></div><div class="rail" id="recentRail"></div></div>
+    <div class="rail-wrap"><div class="rail-head"><h3>🎁 Bundles — buy together, save 15%</h3><span class="muted small">Curated pairs</span></div><div class="rail" id="bundleRail"></div></div>
   </section>
 
   <!-- DEALS -->
@@ -277,13 +289,15 @@
       <div class="stat-card"><small>Coaching bookings</small><b id="dBookings">0</b><span id="dRating">★ 5.0 avg</span></div>
     </div>
     <div class="goal card"><div><b id="goalLabel">Monthly goal — $3,000</b><div class="muted small" id="goalSub"></div></div>
-      <div class="bar"><i id="goalBar"></i></div></div>
+      <div class="bar"><i id="goalBar"></i></div>
+      <div class="goal-edit"><input id="goalInput" type="number" value="3000" min="100" step="100" aria-label="Goal amount" /><button class="btn small" id="goalSave">Set goal</button></div></div>
     <div class="split">
       <div class="card"><div class="card-head"><h3>Revenue — last 7 days</h3><div class="tabs small" id="revTabs"><button data-r="7" class="active">7d</button><button data-r="30">30d</button></div></div><canvas id="revChart" height="160"></canvas>
         <div id="topProducts"></div></div>
       <div>
-        <div class="card"><h3>Next up</h3><div id="todoList"></div></div>
+        <div class="card"><div class="card-head"><h3>Next up</h3><button class="btn small" id="addTaskBtn">＋ Task</button></div><div id="todoList"></div></div>
         <div class="card"><h3>Coach earnings</h3><div id="coachEarnBox"></div></div>
+        <div class="card"><h3>📣 Live shopping</h3><p class="muted small">Drop every Friday 6PM CT — deals unlock live.</p><button class="btn primary block" id="liveShopBtn">▶ Join next live drop</button></div>
       </div>
     </div>
     <div class="card"><h3>Recent activity</h3><div id="recentActivity"></div></div>
@@ -366,6 +380,13 @@
             <button class="btn" id="giftBtn">🎁 Gift card</button>
           </div>
           <div class="pay-methods"><div>💳 Visa •• 4242</div><div>🏦 Bank •• 6789</div><div>◉ Empower Pay instant</div></div>
+        </div>
+        <div class="card"><h3>🔗 Affiliate — earn 10% of friends' fees</h3>
+          <p class="muted small">Share code <b id="affCode">JORDAN10</b> • <span id="affStats">0 clicks • $0 earned</span></p>
+          <div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn small" id="affCopy">Copy link</button><button class="btn small primary" id="affSim">Simulate sale +$2</button></div>
+        </div>
+        <div class="card"><h3>🔁 Subscriptions</h3><div id="subsBox"></div>
+          <button class="btn small" id="addSubBtn">＋ Subscribe to a restock</button>
         </div>
         <div class="card"><h3>Escrow — how you're protected</h3>
           <div class="escrow-steps big"><span class="done">1 Pay</span><i>→</i><span class="done">2 Held</span><i>→</i><span>3 Delivered</span><i>→</i><span>4 Released</span></div>
