@@ -1,10 +1,12 @@
-/* Empower v2.0 final — virtual economic platform. Vanilla JS + localStorage. */
-const KEY = 'empower_state_v2';
+/* Empower v3.0 expanded — marketplace + deals + services + learn + community + inbox. Vanilla JS + localStorage. */
+const KEY = 'empower_state_v3';
 const CATS = ['All','Fashion','Tech','Digital','Art','Wellness','Home','Courses'];
-const COUPONS = { EMPOWER10: 0.10, WELCOME15: 0.15, COACH20: 0.20 };
+const COUPONS = { EMPOWER10: 0.10, WELCOME15: 0.15, COACH20: 0.20, PLUS25: 0.25 };
+const FX = { USD: { r: 1, s: '$' }, EUR: { r: 0.92, s: '€' }, GBP: { r: 0.79, s: '£' } };
 const $ = s => document.querySelector(s);
 const $$ = s => Array.from(document.querySelectorAll(s));
-const money = n => '$' + Number(n || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+function cur() { try { return (S && S.user && S.user.currency) || 'USD'; } catch (e) { return 'USD'; } }
+const money = n => { const c = FX[cur()] || FX.USD; const v = Number(n || 0) * c.r; return c.s + v.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }); };
 const ec = n => Number(n || 0).toLocaleString(undefined, { maximumFractionDigits: 0 }) + ' EC';
 const esc = s => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 const uid = p => p + '-' + Math.floor(1000 + Math.random() * 9000);
@@ -12,9 +14,47 @@ const today = () => 'Today';
 
 function seed() {
   return {
-    v: 2,
+    v: 3,
     onboarded: false,
-    user: { name: 'Jordan Doe', email: 'jordan@empower.app', balance: 1250, memberSince: '2025', avatar: 'JD', address: '123 Market St, Austin TX', emoji: '🧑‍🚀' },
+    theme: 'dark',
+    user: { name: 'Jordan Doe', email: 'jordan@empower.app', balance: 1250, memberSince: '2025', avatar: 'JD', address: '123 Market St, Austin TX', emoji: '🧑‍🚀', currency: 'USD', plus: false, referral: 'JORDAN-2026', invites: 0 },
+    dealsEndsAt: Date.now() + 14 * 3600 * 1000,
+    deals: [
+      { pid: 'p2', pct: 25 }, { pid: 'p5', pct: 30 }, { pid: 'p8', pct: 20 }, { pid: 'p12', pct: 22 },
+      { pid: 'p1', pct: 15 }, { pid: 'p6', pct: 35 }
+    ],
+    gigs: [
+      { id: 'g1', title: 'Design a logo + brand kit in 48h', seller: 'Diego Ruiz', price: 120, rating: 4.9, orders: 340, img: '🎨', cat: 'Design', delivery: '2 days', desc: '3 concepts, unlimited revisions, source files + mini brand guide.' },
+      { id: 'g2', title: 'Build a 1-page store that converts', seller: 'Aisha Bello', price: 250, rating: 5.0, orders: 190, img: '🚀', cat: 'Marketing', delivery: '5 days', desc: 'Copy, design + checkout setup. Includes analytics + 7-day support.' },
+      { id: 'g3', title: '30-min bookkeeping cleanup call', seller: 'Marcus Lee', price: 60, rating: 4.9, orders: 420, img: '📊', cat: 'Finance', delivery: '1 day', desc: 'Fix your books, set up categories, tax-ready checklist included.' },
+      { id: 'g4', title: 'Product photos from your phone pics', seller: 'Studio Kline', price: 45, rating: 4.8, orders: 510, img: '📸', cat: 'Design', delivery: '3 days', desc: '10 retouched marketplace-ready photos + 2 lifestyle mockups.' },
+      { id: 'g5', title: 'Resume + LinkedIn overhaul', seller: 'Sofia Chen', price: 90, rating: 5.0, orders: 280, img: '💼', cat: 'Career', delivery: '3 days', desc: 'ATS-proof resume, headline + about rewrite, 2 mock questions.' },
+      { id: 'g6', title: 'Custom workout + meal plan', seller: 'Priya Nair', price: 55, rating: 5.0, orders: 610, img: '💪', cat: 'Fitness', delivery: '2 days', desc: 'Personalized 4-week plan + video demos + chat check-ins.' }
+    ],
+    gigRequests: [
+      { id: 'r1', title: 'Need wedding invites (50 pcs)', budget: 80, by: 'Lena K.', bids: 4, cat: 'Design' },
+      { id: 'r2', title: 'Fix my Shopify checkout drop-off', budget: 200, by: 'Tom R.', bids: 7, cat: 'Marketing' }
+    ],
+    courses: [
+      { id: 'k1', title: 'Store Launch Sprint (7 days)', coach: 'Alex Morgan', price: 149, lessons: ['Pick a winning product', 'Build the page', 'Launch ads', 'Scale to $10k'], progress: 0, enrolled: false, duration: '4h', img: '🤖', rating: 4.9 },
+      { id: 'k2', title: 'Content → Clients Engine', coach: 'Aisha Bello', price: 99, lessons: ['Hooks', 'Offers', 'DM scripts', '30-day calendar'], progress: 0, enrolled: true, duration: '3h', img: '📣', rating: 5.0 },
+      { id: 'k3', title: 'Money Systems for Sellers', coach: 'Marcus Lee', price: 79, lessons: ['Pricing', 'Bookkeeping', 'Tax setup'], progress: 33, enrolled: true, duration: '2.5h', img: '📈', rating: 4.8 },
+      { id: 'k4', title: 'Design Portfolios That Hire', coach: 'Diego Ruiz', price: 119, lessons: ['Case studies', 'Critiques', 'Outreach'], progress: 0, enrolled: false, duration: '3.5h', img: '🎨', rating: 4.9 }
+    ],
+    posts: [
+      { id: 'f1', author: 'Maya Atelier', role: 'Top seller • Fashion', av: '👜', topic: 'Wins', title: 'First $10k month selling totes!', text: '3 things that moved the needle: real photos, replying in <2h, and EMPOWER10 for first buyers. Happy to critique shops below 👇', likes: 214, liked: false, time: '2h', comments: [{ n: 'Jordan', t: 'Congrats! What camera do you use?' }] },
+      { id: 'f2', author: 'Tom R.', role: 'New seller', av: '🧑‍💻', topic: 'Questions', title: 'Physical vs digital first product?', text: 'I can build Notion packs fast but physical feels more premium. What would you start with in 2026?', likes: 48, liked: false, time: '5h', comments: [{ n: 'Sofia', t: 'Digital — instant cash, then fund physical.' }] },
+      { id: 'f3', author: 'Coach Priya', role: 'Verified coach', av: '🏋️', topic: 'Collabs', title: 'Free form-check Friday (10 slots)', text: 'Drop a video of your squat/deadlift — I will review the first 10 live. Bring a friend, both get 15% off plans 💪', likes: 96, liked: false, time: '1d', comments: [] },
+      { id: 'f4', author: 'Kiln & Co', role: 'Home • 560 sold', av: '☕', topic: 'Restocks', title: 'Mug Duo restocked + new glaze', text: '40 sets back in stock after selling out twice. Community gets early access before the flash deal goes live.', likes: 61, liked: false, time: '1d', comments: [] }
+    ],
+    threads: [
+      { id: 't1', from: 'Priya Nair', kind: 'coaches', title: 'Your Oct 5 session', preview: 'Here is your prep checklist…', time: 'Today', unread: 1, msgs: [{ me: false, t: 'Hi Jordan! For Oct 5, bring your food log + 2 goal photos. Excited! 💪' }] },
+      { id: 't2', from: 'Empower Support', kind: 'orders', title: 'ORD-1039 shipped', preview: 'Arriving Oct 3 — track here…', time: 'Today', unread: 1, msgs: [{ me: false, t: 'Good news — ORD-1039 left the warehouse. Track it in Orders > Track. Reply here for help.' }] },
+      { id: 't3', from: 'Maya Atelier', kind: 'orders', title: 'Thanks for your interest!', preview: 'Tote restock next week…', time: 'Sep 29', unread: 0, msgs: [{ me: false, t: 'Thanks for viewing the Leather Tote! New colors drop next week — want early access?' }] }
+    ],
+    disputes: [],
+    giftCodes: [],
+    following: [],
     cart: [{ id: 'p3', qty: 1 }],
     coupon: null,
     wishlist: ['p1'],
@@ -73,9 +113,21 @@ let S;
 try {
   const raw = localStorage.getItem(KEY);
   S = raw ? JSON.parse(raw) : seed();
-  if (!S || S.v !== 2 || !Array.isArray(S.products)) S = seed();
+  if (!S || S.v !== 3 || !Array.isArray(S.products)) {
+    // migrate v2 -> v3: keep user goods, add new modules
+    const fresh = seed();
+    if (S && Array.isArray(S.products)) {
+      ['products', 'coaches', 'orders', 'sold', 'bookings', 'txs', 'cart', 'wishlist', 'notifs', 'reviews', 'coachReviews', 'messages', 'myCoach'].forEach(k => { if (S[k] !== undefined) fresh[k] = S[k]; });
+      if (S.user) fresh.user = Object.assign(fresh.user, S.user);
+      fresh.onboarded = S.onboarded !== false;
+    }
+    S = fresh;
+  }
 } catch (e) { S = seed(); }
+S.user.currency = S.user.currency || 'USD';
+S.user.referral = S.user.referral || 'JORDAN-2026';
 const save = () => { try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) {} };
+function applyTheme() { document.documentElement.dataset.theme = S.theme === 'light' ? 'light' : ''; const b = $('#themeBtn'); if (b) b.textContent = S.theme === 'light' ? '☀️' : '🌙'; }
 
 /* ---------- helpers ---------- */
 function toast(msg, type) {
@@ -115,7 +167,7 @@ function imgHTML(p, cls) {
 function stars(r) { const f = Math.round(Number(r) || 0); return '★'.repeat(f) + '☆'.repeat(Math.max(0, 5 - f)); }
 
 /* ---------- navigation (hash routing) ---------- */
-const VIEWS = ['marketplace', 'coaches', 'sell', 'become-coach', 'dashboard', 'orders', 'wishlist', 'wallet'];
+const VIEWS = ['marketplace', 'deals', 'services', 'learn', 'coaches', 'community', 'sell', 'become-coach', 'dashboard', 'orders', 'inbox', 'wishlist', 'wallet'];
 function nav(name) {
   if (VIEWS.indexOf(name) < 0) name = 'marketplace';
   $$('#mainNav button').forEach(b => b.classList.toggle('active', b.dataset.nav === name));
@@ -130,6 +182,11 @@ function nav(name) {
   if (name === 'wishlist') renderWishlist();
   if (name === 'coaches') renderCoaches();
   if (name === 'marketplace') renderMarket();
+  if (name === 'deals') renderDeals();
+  if (name === 'services') renderServices();
+  if (name === 'learn') renderLearn();
+  if (name === 'community') renderCommunity();
+  if (name === 'inbox') renderInbox();
 }
 window.nav = nav;
 document.addEventListener('click', e => {
@@ -167,10 +224,11 @@ function productCard(p) {
     '<button class="heart' + (wished ? ' on' : '') + '" data-fav="' + p.id + '" aria-label="Wishlist">' + (wished ? '♥' : '♡') + '</button>' +
     imgHTML(p) + badge2 + '</div>' +
     '<div class="p-body"><h4>' + esc(p.title) + '</h4>' +
-    '<div class="seller">by ' + esc(p.seller) + ' • ' + Number(p.sold).toLocaleString() + ' sold' + (p.mine ? ' • <b style="color:var(--green)">yours</b>' : '') + '</div>' +
+    '<div class="seller">by <a href="#" data-seller="' + esc(p.seller) + '">' + esc(p.seller) + '</a> • ' + Number(p.sold).toLocaleString() + ' sold' + (p.mine ? ' • <b style="color:var(--green)">yours</b>' : '') + '</div>' +
     '<div class="p-meta"><span class="price">' + money(p.price) + ' <small>' + ec(p.price) + '</small></span>' +
     '<span class="rating">★ ' + p.rating + ' (' + p.reviews + ')</span></div>' +
     '<div class="p-actions"><button class="btn" data-add="' + p.id + '"' + (out ? ' disabled' : '') + '>' + (out ? 'Sold out' : 'Add') + '</button>' +
+    '<button class="btn ghost" data-offer="' + p.id + '" title="Make an offer">◐</button>' +
     '<button class="btn primary" data-view="' + p.id + '">View</button></div></div></div>';
 }
 function renderMarket() {
@@ -185,6 +243,8 @@ function renderMarket() {
   $$('#productGrid [data-add]').forEach(b => b.onclick = () => addToCart(b.dataset.add));
   $$('#productGrid [data-view]').forEach(b => b.onclick = () => viewProduct(b.dataset.view));
   $$('#productGrid [data-fav]').forEach(b => b.onclick = () => toggleWish(b.dataset.fav));
+  $$('#productGrid [data-offer]').forEach(b => b.onclick = () => makeOffer(b.dataset.offer));
+  $$('#productGrid [data-seller]').forEach(b => b.onclick = e => { e.preventDefault(); sellerStore(b.dataset.seller); });
   $('#activityFeed').innerHTML = S.feed.slice(0, 6).map(f => '<div class="feed-item">' + esc(f) + '</div>').join('');
   const sel = $('#sortSelect'); if (sel) sel.value = S.sort;
   const tf = $('#typeFilter'); if (tf) tf.value = S.type;
@@ -251,13 +311,16 @@ function bindSearch() {
     const drop = $('#searchDrop');
     if (q.length >= 2) {
       const ps = S.products.filter(p => (p.title + ' ' + p.seller).toLowerCase().indexOf(q) >= 0).slice(0, 4);
-      const cs = S.coaches.filter(c => (c.name + ' ' + c.specialty).toLowerCase().indexOf(q) >= 0).slice(0, 3);
+      const cs = S.coaches.filter(c => (c.name + ' ' + c.specialty).toLowerCase().indexOf(q) >= 0).slice(0, 2);
+      const gs = (S.gigs || []).filter(g => (g.title + ' ' + g.seller).toLowerCase().indexOf(q) >= 0).slice(0, 2);
       let h = ps.map(p => '<button data-s-p="' + p.id + '"><span>' + esc(p.img) + '</span><span><b>' + esc(p.title) + '</b><br /><small class="muted">' + money(p.price) + ' • ' + esc(p.category) + '</small></span></button>').join('');
       h += cs.map(c => '<button data-s-c="' + c.id + '"><span>' + c.img + '</span><span><b>' + esc(c.name) + '</b><br /><small class="muted">Coach • ' + esc(c.specialty) + '</small></span></button>').join('');
+      h += gs.map(g => '<button data-s-g="' + g.id + '"><span>' + g.img + '</span><span><b>' + esc(g.title) + '</b><br /><small class="muted">Gig • ' + money(g.price) + '</small></span></button>').join('');
       drop.innerHTML = h || '<button disabled>No matches</button>';
       drop.hidden = false;
       $$('#searchDrop [data-s-p]').forEach(b => b.onclick = () => { hideSearch(); viewProduct(b.dataset.sP); });
       $$('#searchDrop [data-s-c]').forEach(b => b.onclick = () => { hideSearch(); nav('coaches'); bookCoach(b.dataset.sC, true); });
+      $$('#searchDrop [data-s-g]').forEach(b => b.onclick = () => { hideSearch(); nav('services'); hireGig(b.dataset.sG); });
     } else drop.hidden = true;
     if (!$('#view-marketplace').classList.contains('active')) nav('marketplace');
     renderMarket();
@@ -289,10 +352,13 @@ function cartDetailed() {
 }
 function cartSubtotal() { return cartDetailed().reduce((s, x) => s + x.price * x.qty, 0); }
 function cartDiscount(sub) {
-  if (!S.coupon || !COUPONS[S.coupon]) return 0;
-  return sub * COUPONS[S.coupon];
+  let d = 0;
+  if (S.coupon && COUPONS[S.coupon]) d += sub * COUPONS[S.coupon];
+  if (S.user.plus) d += sub * 0.05;
+  return Math.min(d, sub * 0.6);
 }
 function cartShipping(sub) {
+  if (S.user.plus) return 0;
   const lines = cartDetailed();
   if (!lines.length) return 0;
   if (lines.every(l => l.type !== 'Physical')) return 0;
@@ -417,7 +483,7 @@ function renderOrders() {
   $('#ordersList').innerHTML = list.map((o, i) => {
     const tag = o.status === 'Delivered' || o.status === 'Paid out' || o.status === 'Confirmed' ? 'ok' : (o.status === 'Cancelled' ? 'bad' : 'warn');
     let actions = '';
-    if (S.orderTab === 'bought') actions = '<button class="btn small" data-tr="' + i + '">Track</button><button class="btn small" data-inv="' + i + '">Invoice</button>' + (o.status !== 'Delivered' && o.status !== 'Cancelled' ? '<button class="btn small" data-rec="' + i + '">Mark received</button><button class="btn small danger" data-cancel="' + i + '">Cancel</button>' : '<button class="btn small" data-reo="' + i + '">Reorder</button><button class="btn small" data-rate="' + i + '">★ Rate</button>');
+    if (S.orderTab === 'bought') actions = '<button class="btn small" data-tr="' + i + '">Track</button><button class="btn small" data-inv="' + i + '">Invoice</button>' + (o.status !== 'Delivered' && o.status !== 'Cancelled' ? '<button class="btn small" data-rec="' + i + '">Mark received</button><button class="btn small danger" data-cancel="' + i + '">Cancel</button>' : '<button class="btn small" data-reo="' + i + '">Reorder</button><button class="btn small" data-rate="' + i + '">★ Rate</button>') + '<button class="btn small" data-disp="' + i + '">Dispute</button>';
     if (S.orderTab === 'bookings') actions = '<button class="btn small" data-join="' + i + '">Join call</button><button class="btn small" data-msg="' + i + '">Message</button><button class="btn small danger" data-bcan="' + i + '">Reschedule</button>';
     if (S.orderTab === 'sold') actions = '<button class="btn small" data-ship="' + i + '">Advance status</button>';
     return '<div class="list-row"><div class="thumb">' + (o.kind === 'bookings' ? '📅' : esc(o.img || '📦')) + '</div>' +
@@ -431,6 +497,7 @@ function renderOrders() {
   $$('#ordersList [data-cancel]').forEach(b => b.onclick = () => { const o = S.orders[Number(b.dataset.cancel)]; o.status = 'Cancelled'; S.user.balance += o.total; S.txs.unshift({ t: 'Refund — ' + o.title, a: o.total, d: today(), k: 'in' }); notify('Order ' + o.id + ' cancelled — refunded ' + money(o.total)); save(); renderOrders(); renderWallet(); });
   $$('#ordersList [data-reo]').forEach(b => b.onclick = () => { const o = S.orders[Number(b.dataset.reo)]; const p = S.products.find(pp => pp.title === o.title); if (p) { addToCart(p.id, true); openCart(); } else toast('Original listing is gone', 'err'); });
   $$('#ordersList [data-rate]').forEach(b => b.onclick = () => rateOrder(Number(b.dataset.rate)));
+  $$('#ordersList [data-disp]').forEach(b => b.onclick = () => disputeModal(S.orders[Number(b.dataset.disp)].id));
   $$('#ordersList [data-join]').forEach(b => b.onclick = () => { const bk = S.bookings[Number(b.dataset.join)]; openModal('<h3>Your session</h3><p class="muted">' + esc(bk.coach) + ' • ' + esc(bk.when) + '</p><div class="card-flat">Video link: <b>' + esc(bk.meet || 'https://meet.empower.app/session') + '</b><br /><small class="muted">Recording + action plan arrive after the call.</small></div><button class="btn primary block" style="margin-top:10px" onclick="closeModal()">Got it</button>'); });
   $$('#ordersList [data-msg]').forEach(b => b.onclick = () => messageCoach(S.bookings[Number(b.dataset.msg)].coachId));
   $$('#ordersList [data-bcan]').forEach(b => b.onclick = () => { const bk = S.bookings[Number(b.dataset.bcan)]; bk.status = 'Rescheduled'; save(); renderOrders(); toast('Booking moved — coach will propose new times', 'ok'); });
@@ -489,8 +556,9 @@ function renderSell() {
 }
 function updateFeeBox() {
   const v = Number(($('#sellPrice') || {}).value || 0);
-  const fee = v * 0.05, net = v - fee;
-  const box = $('#feeBox'); if (box) box.innerHTML = v > 0 ? 'You get <b>' + money(net) + '</b> per sale (' + money(fee) + ' fee • buyer pays ' + money(v) + ')' : 'Fee preview: —';
+  const rate = S.user.plus ? 0.02 : 0.05;
+  const fee = v * rate, net = v - fee;
+  const box = $('#feeBox'); if (box) box.innerHTML = v > 0 ? 'You get <b>' + money(net) + '</b> per sale (' + money(fee) + ' fee' + (S.user.plus ? ' • Plus 2%' : '') + ' • buyer pays ' + money(v) + ')' : 'Fee preview: —';
 }
 function editListing(id) {
   const p = S.products.find(x => x.id === id); if (!p) return;
@@ -731,6 +799,304 @@ function profileModal() {
   };
 }
 
+/* ---------- v3 modules: deals / services / learn / community / inbox / plus / gifts / offers / disputes / storefronts ---------- */
+function dealPrice(p, pct) { return Math.round(p.price * (1 - pct / 100) * 100) / 100; }
+function renderDeals() {
+  if (Date.now() > S.dealsEndsAt) S.dealsEndsAt = Date.now() + 14 * 3600 * 1000;
+  const g = $('#dealsGrid'); if (!g) return;
+  g.innerHTML = S.deals.map(d => {
+    const p = S.products.find(x => x.id === d.pid); if (!p) return '';
+    const dp = dealPrice(p, d.pct);
+    const claimed = 60 + (p.sold % 35);
+    return '<div class="product"><div class="p-img"><span class="deal-badge">−' + d.pct + '%</span>' +
+      '<button class="heart' + (S.wishlist.indexOf(p.id) >= 0 ? ' on' : '') + '" data-d-fav="' + p.id + '">' + (S.wishlist.indexOf(p.id) >= 0 ? '♥' : '♡') + '</button>' + imgHTML(p) + '</div>' +
+      '<div class="p-body"><h4>' + esc(p.title) + '</h4><div class="seller">by ' + esc(p.seller) + ' • ' + Number(p.sold).toLocaleString() + ' sold</div>' +
+      '<div class="deal-price"><b>' + money(dp) + '</b><s>' + money(p.price) + '</s><span class="tag ok">save ' + money(p.price - dp) + '</span></div>' +
+      '<div class="deal-bar"><i style="width:' + claimed + '%"></i></div><small class="muted">' + claimed + '% claimed</small>' +
+      '<div class="p-actions"><button class="btn" data-d-add="' + p.id + '|' + d.pct + '">Add deal</button><button class="btn primary" data-d-view="' + p.id + '">View</button></div></div></div>';
+  }).join('');
+  $$('#dealsGrid [data-d-add]').forEach(b => b.onclick = () => {
+    const parts = b.dataset.dAdd.split('|'); const pid = parts[0]; const pct = Number(parts[1]);
+    const p = S.products.find(x => x.id === pid); if (!p) return;
+    const dp = dealPrice(p, pct);
+    const line = S.cart.find(c => c.id === pid);
+    if (line) line.qty++; else S.cart.push({ id: pid, qty: 1, dealPrice: dp });
+    // store deal override: encode via coupon-free path — adjust by adding a pseudo discount tx at checkout? simpler: temporarily set price override map
+    S.dealOverride = S.dealOverride || {}; S.dealOverride[pid] = dp;
+    save(); updateCartUI(); toast('Deal locked in 🛒 −' + pct + '%', 'ok');
+  });
+  $$('#dealsGrid [data-d-view]').forEach(b => b.onclick = () => viewProduct(b.dataset.dView));
+  $$('#dealsGrid [data-d-fav]').forEach(b => b.onclick = () => toggleWish(b.dataset.dFav));
+  const cs = $('#currencySel'); if (cs) cs.value = cur();
+  tickDeals();
+}
+function tickDeals() {
+  const el = $('#dealTimer'); if (!el) return;
+  let ms = Math.max(0, S.dealsEndsAt - Date.now());
+  const h = Math.floor(ms / 3600000), m = Math.floor(ms % 3600000 / 60000), s = Math.floor(ms % 60000 / 1000);
+  el.textContent = '⏳ ' + String(h).padStart(2, '0') + ':' + String(m).padStart(2, '0') + ':' + String(s).padStart(2, '0') + ' left';
+}
+// deal-aware subtotal: override unit price when deal locked
+const _cartSubtotal = cartSubtotal;
+cartSubtotal = function () {
+  return cartDetailed().reduce((sum, x) => {
+    const ov = (S.dealOverride && S.dealOverride[x.id]) || null;
+    const unit = (ov && ov < x.price) ? ov : x.price;
+    return sum + unit * x.qty;
+  }, 0);
+};
+function renderServices() {
+  const cats = ['All', 'Design', 'Marketing', 'Finance', 'Career', 'Fitness'];
+  const gp = $('#gigPills'); if (gp && !gp.dataset.init) { gp.innerHTML = cats.map(c => '<button data-gc="' + c + '">' + c + '</button>').join(''); gp.dataset.init = '1'; }
+  const active = S.gigCat || 'All';
+  $$('#gigPills button').forEach(b => { b.classList.toggle('active', b.dataset.gc === active); b.onclick = () => { S.gigCat = b.dataset.gc; save(); renderServices(); }; });
+  let list = S.gigs.filter(g => active === 'All' || g.cat === active);
+  const sm = { 'rating': (a, b) => b.rating - a.rating, 'price-asc': (a, b) => a.price - b.price, 'price-desc': (a, b) => b.price - a.price, 'orders': (a, b) => b.orders - a.orders };
+  const sort = ($('#gigSort') || {}).value || 'rating';
+  list = list.slice().sort(sm[sort] || sm.rating);
+  $('#gigGrid').innerHTML = list.map(g =>
+    '<div class="gig-card"><div class="p-img" style="height:130px;font-size:54px">' + g.img + '</div>' +
+    '<div class="p-body"><h4>' + esc(g.title) + '</h4><div class="seller">by ' + esc(g.seller) + ' • ★ ' + g.rating + ' • ' + g.orders + ' orders • ' + esc(g.delivery) + '</div>' +
+    '<p class="muted small">' + esc(g.desc) + '</p>' +
+    '<div class="p-meta"><b>' + money(g.price) + '</b><span class="tag info">' + esc(g.cat) + '</span></div>' +
+    '<div class="p-actions"><button class="btn primary" data-hire="' + g.id + '">Hire — ' + money(g.price) + '</button><button class="btn" data-gmsg="' + g.id + '">💬</button></div></div></div>'
+  ).join('') || '<div class="card">No gigs here yet.</div>';
+  $$('#gigGrid [data-hire]').forEach(b => b.onclick = () => hireGig(b.dataset.hire));
+  $$('#gigGrid [data-gmsg]').forEach(b => b.onclick = () => {
+    const g = S.gigs.find(x => x.id === b.dataset.gmsg);
+    S.threads.unshift({ id: uid('T'), from: g.seller, kind: 'orders', title: g.title, preview: 'Hi about your gig…', time: today(), unread: 0, msgs: [{ me: false, t: 'Hi! Thanks for asking about "' + g.title + '". Tell me your deadline and I will confirm a plan + quote.' }] });
+    save(); nav('inbox'); renderInbox(); toast('Chat opened with ' + g.seller, 'ok');
+  });
+  $('#gigRequests').innerHTML = S.gigRequests.map(r =>
+    '<div class="list-row"><div class="thumb">📝</div><div class="grow"><b>' + esc(r.title) + '</b><span>' + esc(r.by) + ' • budget ' + money(r.budget) + ' • ' + r.bids + ' bids • ' + esc(r.cat) + '</span></div><button class="btn small" data-bid="' + r.id + '">Bid</button></div>'
+  ).join('');
+  $$('#gigRequests [data-bid]').forEach(b => b.onclick = () => {
+    const r = S.gigRequests.find(x => x.id === b.dataset.bid);
+    r.bids++; save(); renderServices(); toast('Bid sent! Buyer usually replies in ~3h', 'ok'); notify('Bid sent on "' + r.title + '".');
+  });
+}
+function hireGig(id) {
+  const g = S.gigs.find(x => x.id === id); if (!g) return;
+  openModal('<h3>Hire: ' + esc(g.title) + '</h3><p class="muted small">by ' + esc(g.seller) + ' • ★ ' + g.rating + ' • delivery ' + esc(g.delivery) + '</p>' +
+    '<label>Project details<textarea id="gigBrief" rows="3" placeholder="Goals, links, deadline…"></textarea></label>' +
+    '<div class="total-row"><span>Total (escrow)</span><b>' + money(g.price) + '</b></div>' +
+    '<button class="btn primary block" id="gigGo" style="margin-top:10px">Pay ' + money(g.price) + ' → start gig</button>');
+  $('#gigGo').onclick = () => {
+    if (S.user.balance < g.price) { toast('Insufficient balance — add funds', 'err'); closeModal(); nav('wallet'); return; }
+    S.user.balance -= g.price; g.orders++;
+    S.orders.unshift({ id: uid('ORD'), title: 'Gig: ' + g.title, img: g.img, qty: 1, total: g.price, status: 'Processing', kind: 'bought', date: today(), step: 0 });
+    S.txs.unshift({ t: 'Gig hire — ' + g.seller, a: -g.price, d: today(), k: 'out' });
+    S.threads.unshift({ id: uid('T'), from: g.seller, kind: 'orders', title: g.title, preview: 'Kickoff — brief received', time: today(), unread: 1, msgs: [{ me: false, t: 'Locked in! I got your brief and will deliver in ' + g.delivery + '. I will post drafts here.' }] });
+    notify('Gig started with ' + g.seller + ' — escrowed ' + money(g.price) + '.');
+    save(); closeModal(); renderServices(); updateWalletUI(); toast('Gig started! 🎉', 'ok'); nav('orders'); S.orderTab = 'bought'; renderOrders();
+  };
+}
+function renderLearn() {
+  const g = $('#courseGrid'); if (!g) return;
+  $('#learnStats').textContent = S.courses.filter(k => k.enrolled).length + ' enrolled';
+  g.innerHTML = S.courses.map(k =>
+    '<div class="coach-card"><div class="coach-top"><div class="coach-av">' + k.img + '</div><div><b>' + esc(k.title) + '</b><div class="muted small">by ' + esc(k.coach) + ' • ' + esc(k.duration) + ' • ★ ' + k.rating + '</div></div></div>' +
+    '<div style="padding:0 16px 16px"><div class="progress"><i style="width:' + (k.progress || 0) + '%"></i></div>' +
+    '<small class="muted">' + (k.enrolled ? (k.progress || 0) + '% complete' : money(k.price) + ' • ' + k.lessons.length + ' lessons') + '</small>' +
+    '<div class="p-actions" style="display:flex;gap:8px;margin-top:8px"><button class="btn primary" style="flex:1" data-k="' + k.id + '">' + (k.enrolled ? 'Continue' : 'Enroll — ' + money(k.price)) + '</button></div></div></div>'
+  ).join('');
+  $$('#courseGrid [data-k]').forEach(b => b.onclick = () => openCourse(b.dataset.k));
+  $('#myLearning').innerHTML = S.courses.filter(k => k.enrolled).map(k =>
+    '<div class="list-row"><div class="thumb">' + k.img + '</div><div class="grow"><b>' + esc(k.title) + '</b><span>' + esc(k.coach) + ' • ' + (k.progress || 0) + '%</span></div><button class="btn small" data-k2="' + k.id + '">Open</button></div>'
+  ).join('') || '<div class="muted">No enrollments yet — pick a course above.</div>';
+  $$('#myLearning [data-k2]').forEach(b => b.onclick = () => openCourse(b.dataset.k2));
+}
+function openCourse(id) {
+  const k = S.courses.find(x => x.id === id); if (!k) return;
+  if (!k.enrolled) {
+    openModal('<h3>' + esc(k.title) + '</h3><p class="muted small">by ' + esc(k.coach) + ' • ' + k.lessons.length + ' lessons • ' + esc(k.duration) + '</p>' +
+      k.lessons.map((l, i) => '<div class="lesson"><span class="t-dot">' + (i + 1) + '</span><span>' + esc(l) + '</span></div>').join('') +
+      '<div class="total-row"><span>Enroll</span><b>' + money(k.price) + '</b></div>' +
+      '<button class="btn primary block" id="kGo" style="margin-top:10px">Enroll now →</button>');
+    $('#kGo').onclick = () => {
+      if (S.user.balance < k.price) { toast('Insufficient balance', 'err'); closeModal(); nav('wallet'); return; }
+      S.user.balance -= k.price; k.enrolled = true; k.progress = 5;
+      S.txs.unshift({ t: 'Course enroll — ' + k.title, a: -k.price, d: today(), k: 'out' });
+      notify('Enrolled in "' + k.title + '".');
+      save(); closeModal(); renderLearn(); updateWalletUI(); toast('Enrolled! 🎬', 'ok'); openCourse(id);
+    };
+    return;
+  }
+  openModal('<h3>' + esc(k.title) + '</h3><p class="muted small">' + (k.progress || 0) + '% complete • keep going 👇</p>' +
+    k.lessons.map((l, i) => {
+      const done = (k.progress || 0) >= Math.round((i + 1) / k.lessons.length * 100);
+      return '<div class="lesson"><button class="btn small" data-les="' + i + '">' + (done ? '✓' : (i + 1)) + '</button><span>' + esc(l) + '</span></div>';
+    }).join('') +
+    '<div class="progress"><i style="width:' + (k.progress || 0) + '%"></i></div>' +
+    ((k.progress || 0) >= 100 ? '<div class="tag ok">🎓 Certificate unlocked — congrats!</div>' : '<p class="muted small">Tap a lesson number to mark it done.</p>'), true);
+  $$('#modalRoot [data-les]').forEach(b => b.onclick = () => {
+    const i = Number(b.dataset.les);
+    k.progress = Math.round((i + 1) / k.lessons.length * 100);
+    if (k.progress >= 100) { S.user.balance += 10; S.txs.unshift({ t: 'Course completion bonus', a: 10, d: today(), k: 'in' }); notify('Course complete! +10 EC bonus.'); }
+    save(); closeModal(); renderLearn(); openCourse(id);
+  });
+}
+function renderCommunity() {
+  const topic = ($('#feedFilter') || {}).value || 'All';
+  const list = S.posts.filter(p => topic === 'All' || p.topic === topic);
+  $('#feedList').innerHTML = list.map(p =>
+    '<div class="post"><div class="post-head"><div class="post-av">' + p.av + '</div><div class="grow"><b>' + esc(p.title) + '</b><span>' + esc(p.author) + ' • ' + esc(p.role) + ' • ' + esc(p.time) + ' • ' + esc(p.topic) + '</span></div><button class="btn small" data-fol="' + esc(p.author) + '">' + (S.following.indexOf(p.author) >= 0 ? 'Following ✓' : 'Follow') + '</button></div>' +
+    '<div>' + esc(p.text) + '</div>' +
+    '<div class="post-actions"><button class="btn small" data-like="' + p.id + '">' + (p.liked ? '♥' : '♡') + ' ' + p.likes + '</button><button class="btn small" data-cview="' + p.id + '">💬 ' + p.comments.length + ' comments</button><button class="btn small" data-shop="' + esc(p.author) + '">Visit shop →</button></div>' +
+    '<div id="c-' + p.id + '">' + p.comments.slice(0, 3).map(c => '<div class="comment"><b>' + esc(c.n) + '</b> ' + esc(c.t) + '</div>').join('') + '</div>' +
+    '<div style="display:flex;gap:8px;margin-top:8px"><input id="ci-' + p.id + '" placeholder="Add a comment…" /><button class="btn small primary" data-send="' + p.id + '">Post</button></div></div>'
+  ).join('') || '<div class="card empty">No posts in this topic yet — be the first.</div>';
+  $$('#feedList [data-like]').forEach(b => b.onclick = () => { const p = S.posts.find(x => x.id === b.dataset.like); p.liked = !p.liked; p.likes += p.liked ? 1 : -1; save(); renderCommunity(); });
+  $$('#feedList [data-fol]').forEach(b => b.onclick = () => { const a = b.dataset.fol; const i = S.following.indexOf(a); if (i >= 0) S.following.splice(i, 1); else S.following.push(a); save(); renderCommunity(); toast(i >= 0 ? 'Unfollowed' : 'Following ' + a + ' ✓', 'ok'); });
+  $$('#feedList [data-shop]').forEach(b => b.onclick = () => sellerStore(b.dataset.shop));
+  $$('#feedList [data-send]').forEach(b => b.onclick = () => {
+    const p = S.posts.find(x => x.id === b.dataset.send); const inp = $('#ci-' + p.id); const v = (inp.value || '').trim(); if (!v) return;
+    p.comments.push({ n: S.user.name.split(' ')[0], t: v }); save(); renderCommunity();
+  });
+  const counts = {};
+  S.posts.forEach(p => { counts[p.author] = (counts[p.author] || 0) + p.likes; });
+  const top = Object.entries(counts).sort((a, b) => b[1] - a[1]).slice(0, 3);
+  $('#topContrib').innerHTML = top.map(t => '<div class="list-row"><div class="thumb">🏆</div><div class="grow"><b>' + esc(t[0]) + '</b><span>' + t[1] + ' likes</span></div><button class="btn small" data-shop2="' + esc(t[0]) + '">Shop</button></div>').join('');
+  $$('#topContrib [data-shop2]').forEach(b => b.onclick = () => sellerStore(b.dataset.shop2));
+  const rc = $('#refCode'); if (rc) rc.textContent = S.user.referral;
+}
+function renderInbox() {
+  const tab = S.inboxTab || 'all';
+  $$('#inboxTabs button').forEach(b => { b.classList.toggle('active', b.dataset.it === tab); b.onclick = () => { S.inboxTab = b.dataset.it; save(); renderInbox(); }; });
+  const list = S.threads.filter(t => tab === 'all' || t.kind === tab || (tab === 'disputes' && t.kind === 'dispute'));
+  $('#threadList').innerHTML = list.map(t =>
+    '<div class="thread' + (S.activeThread === t.id ? ' sel' : '') + (t.unread ? ' unread' : '') + '" data-th="' + t.id + '"><b>' + esc(t.from) + '</b><div class="muted small">' + esc(t.title) + '</div><div class="muted small">' + esc(t.preview) + ' • ' + esc(t.time) + '</div></div>'
+  ).join('') || '<div class="muted">No conversations here.</div>';
+  $$('#threadList [data-th]').forEach(b => b.onclick = () => { S.activeThread = b.dataset.th; save(); renderInbox(); });
+  const t = S.threads.find(x => x.id === S.activeThread) || list[0];
+  if (!t) { $('#threadView').innerHTML = '<div class="empty"><span class="big">✉️</span><b>Pick a conversation</b></div>'; renderInboxBadge(); return; }
+  S.activeThread = t.id; t.unread = 0; save();
+  $('#threadView').innerHTML = '<h3 style="margin-top:0">' + esc(t.title) + '</h3><p class="muted small">' + esc(t.from) + '</p>' +
+    '<div class="chat" style="max-height:300px">' + t.msgs.map(m => '<div class="msg' + (m.me ? ' me' : '') + '">' + esc(m.t) + '</div>').join('') + '</div>' +
+    '<div style="display:flex;gap:8px"><input id="thIn" placeholder="Reply…" /><button class="btn primary" id="thSend">Send</button></div>';
+  $('#thSend').onclick = () => {
+    const v = $('#thIn').value.trim(); if (!v) return;
+    t.msgs.push({ me: true, t: v }); t.preview = v.slice(0, 40); save(); renderInbox();
+    setTimeout(() => { t.msgs.push({ me: false, t: 'Got it — I will follow up within a few hours. Anything else I can prep?' }); t.unread = 1; save(); if ($('#view-inbox').classList.contains('active')) renderInbox(); renderInboxBadge(); }, 1200);
+  };
+  renderDisputes(); renderInboxBadge();
+}
+function renderInboxBadge() {
+  const n = S.threads.reduce((s, t) => s + (t.unread || 0), 0);
+  const el = $('#inboxCount'); if (el) { el.hidden = !n; el.textContent = n > 9 ? '9+' : n; }
+}
+function renderDisputes() {
+  const box = $('#disputeList'); if (!box) return;
+  box.innerHTML = S.disputes.map(d =>
+    '<div class="list-row"><div class="thumb">🛡️</div><div class="grow"><b>' + esc(d.order) + ' — ' + esc(d.reason) + '</b><span>' + esc(d.status) + ' • ' + esc(d.date) + '</span></div><span class="tag ' + (d.status === 'Resolved' ? 'ok' : 'warn') + '">' + esc(d.status) + '</span></div>'
+  ).join('') || '<div class="muted small">No disputes. Escrow covers every order — open one if delivery fails.</div>';
+}
+function makeOffer(pid) {
+  const p = S.products.find(x => x.id === pid); if (!p) return;
+  if (p.type === 'Digital') { toast('Digital items are fixed price', 'err'); return; }
+  openModal('<h3>Make an offer — ' + esc(p.title) + '</h3><p class="muted small">Listed at <b>' + money(p.price) + '</b> • seller usually responds in ~2h</p>' +
+    '<label>Your offer (' + cur() + ')<input id="offAmt" type="number" value="' + Math.round(p.price * 0.85) + '" min="1" /></label>' +
+    '<label>Message (optional)<input id="offMsg" placeholder="e.g. Can pick up this weekend" /></label>' +
+    '<button class="btn primary block" id="offGo">Send offer →</button><p class="muted small">Binding for 24h if accepted. Escrow still applies.</p>');
+  $('#offGo').onclick = () => {
+    const amt = Number($('#offAmt').value);
+    if (!amt || amt <= 0) { toast('Enter an offer', 'err'); return; }
+    const ratio = amt / p.price;
+    if (ratio >= 0.8) {
+      S.dealOverride = S.dealOverride || {}; S.dealOverride[p.id] = amt;
+      const line = S.cart.find(c => c.id === p.id);
+      if (line) line.qty++; else S.cart.push({ id: p.id, qty: 1 });
+      S.threads.unshift({ id: uid('T'), from: p.seller, kind: 'orders', title: 'Offer accepted: ' + p.title, preview: money(amt) + ' accepted!', time: today(), unread: 1, msgs: [{ me: false, t: 'Accepted! Your offer of ' + money(amt) + ' for "' + p.title + '" is locked for 24h. It is in your cart.' }] });
+      notify('Offer accepted by ' + p.seller + ' — ' + money(amt) + '.');
+      save(); closeModal(); updateCartUI(); renderInboxBadge(); openCart(); toast('Offer accepted! 🎉', 'ok');
+    } else {
+      const counter = Math.round(p.price * 0.9);
+      S.threads.unshift({ id: uid('T'), from: p.seller, kind: 'orders', title: 'Counter-offer: ' + p.title, preview: 'How about ' + money(counter) + '?', time: today(), unread: 1, msgs: [{ me: false, t: 'Thanks for the offer! I can do ' + money(counter) + ' (lowest I can go). Want me to lock that in?' }] });
+      save(); closeModal(); renderInboxBadge(); toast('Counter-offer: ' + money(counter) + ' — see Inbox', 'ok'); nav('inbox');
+    }
+  };
+}
+window.makeOffer = makeOffer;
+function sellerStore(name) {
+  const items = S.products.filter(p => p.seller === name && !p.paused);
+  const gigs = S.gigs.filter(g => g.seller === name);
+  const totalSold = items.reduce((s, p) => s + p.sold, 0);
+  const following = S.following.indexOf(name) >= 0;
+  openModal('<div class="store-hero"><div class="store-av">' + (items[0] ? imgHTML(items[0]) : '🏪') + '</div>' +
+    '<div><h3 style="margin:0">' + esc(name) + ' <span class="tag ok">✓ Verified</span></h3><div class="muted small">' + items.length + ' listings • ' + totalSold.toLocaleString() + ' sold • ★ 4.9 • ships in 2 days</div></div></div>' +
+    '<div style="display:flex;gap:8px;margin-bottom:10px"><button class="btn" style="flex:1" id="stFol">' + (following ? 'Following ✓' : 'Follow store') + '</button><button class="btn" style="flex:1" id="stChat">💬 Message</button></div>' +
+    '<h4>Listings (' + items.length + ')</h4>' +
+    (items.map(p => '<div class="list-row"><div class="thumb">' + imgHTML(p) + '</div><div class="grow"><b>' + esc(p.title) + '</b><span>' + money(p.price) + ' • stock ' + p.stock + '</span></div><button class="btn small primary" data-st-add="' + p.id + '">Add</button><button class="btn small" data-st-view="' + p.id + '">View</button></div>').join('') || '<div class="muted">No live listings.</div>') +
+    (gigs.length ? '<h4>Services</h4>' + gigs.map(g => '<div class="list-row"><div class="thumb">' + g.img + '</div><div class="grow"><b>' + esc(g.title) + '</b><span>' + money(g.price) + '</span></div></div>').join('') : ''), true);
+  $('#stFol').onclick = () => { const i = S.following.indexOf(name); if (i >= 0) S.following.splice(i, 1); else S.following.push(name); save(); closeModal(); sellerStore(name); };
+  $('#stChat').onclick = () => { S.threads.unshift({ id: uid('T'), from: name, kind: 'orders', title: 'Question about your shop', preview: 'Hi!', time: today(), unread: 0, msgs: [{ me: true, t: 'Hi! I love your shop — quick question…' }, { me: false, t: 'Hey, thanks for reaching out! Ask away, I reply within ~2h. 🙌' }] }); save(); closeModal(); nav('inbox'); renderInbox(); };
+  $$('#modalRoot [data-st-add]').forEach(b => b.onclick = () => addToCart(b.dataset.stAdd));
+  $$('#modalRoot [data-st-view]').forEach(b => b.onclick = () => { closeModal(); viewProduct(b.dataset.stView); });
+}
+window.sellerStore = sellerStore;
+function plusModal() {
+  if (S.user.plus) {
+    openModal('<h3>★ Empower Plus — active</h3><div class="list-row"><div class="grow"><b>Free shipping</b><span>on every physical order</span></div><span class="tag ok">ON</span></div>' +
+      '<div class="list-row"><div class="grow"><b>Extra 5% off</b><span>stacks with coupons</span></div><span class="tag ok">ON</span></div>' +
+      '<div class="list-row"><div class="grow"><b>2% selling fees</b><span>instead of 5%</span></div><span class="tag ok">ON</span></div>' +
+      '<button class="btn block" id="plusOff">Cancel Plus (keep perks till month end)</button>');
+    $('#plusOff').onclick = () => { S.user.plus = false; save(); syncPlus(); closeModal(); renderMarket(); updateCartUI(); toast('Plus cancelled'); };
+    return;
+  }
+  openModal('<h3>★ Empower Plus — $9/mo</h3><p class="muted small">Pays for itself in ~2 orders.</p>' +
+    '<div class="list-row"><div class="grow"><b>Free shipping</b><span>save ~$4.95/order</span></div><span class="tag info">incl</span></div>' +
+    '<div class="list-row"><div class="grow"><b>Extra 5% off everything</b><span>stacks with EMPOWER10</span></div><span class="tag info">incl</span></div>' +
+    '<div class="list-row"><div class="grow"><b>2% selling fees</b><span>vs 5% standard</span></div><span class="tag info">incl</span></div>' +
+    '<div class="list-row"><div class="grow"><b>PLUS25 coupon</b><span>25% off, monthly</span></div><span class="tag info">incl</span></div>' +
+    '<button class="btn primary block" id="plusGo">Start Plus — first month 50 EC back →</button><p class="muted small">Cancel anytime. EC-back lands instantly.</p>');
+  $('#plusGo').onclick = () => {
+    S.user.plus = true; S.user.balance += 50; S.coupon = 'PLUS25';
+    S.txs.unshift({ t: 'Empower Plus bonus', a: 50, d: today(), k: 'in' });
+    notify('Welcome to Plus! Free shipping + 5% off active.');
+    save(); syncPlus(); closeModal(); renderMarket(); updateCartUI(); toast('Welcome to Plus ★ +50 EC', 'ok');
+  };
+}
+function syncPlus() { const el = $('#plusPill'); if (el) { el.textContent = S.user.plus ? '★ Plus ON' : '★ Plus'; el.classList.toggle('on', !!S.user.plus); } }
+function giftModal() {
+  openModal('<h3>🎁 Gift cards</h3><p class="muted small">Buy with EC, share the code. Redeeming adds EC instantly.</p>' +
+    '<div class="row2"><label>Amount<input id="gcAmt" type="number" value="25" min="5" /></label><label>To (optional)<input id="gcTo" placeholder="@friend" /></label></div>' +
+    '<button class="btn primary block" id="gcBuy">Buy gift card →</button>' +
+    '<h4 style="margin-top:12px">Redeem a code</h4><div style="display:flex;gap:8px"><input id="gcCode" placeholder="EMP-XXXX" /><button class="btn" id="gcGo">Redeem</button></div>' +
+    '<div style="margin-top:8px">' + (S.giftCodes.filter(g => !g.used).map(g => '<div class="list-row"><div class="grow"><b>' + g.code + '</b><span>' + ec(g.amt) + ' • ' + esc(g.to || 'open') + '</span></div><span class="tag ok">unused</span></div>').join('') || '<div class="muted small">No unused codes.</div>') + '</div>');
+  $('#gcBuy').onclick = () => {
+    const amt = Number($('#gcAmt').value);
+    if (!amt || amt < 5 || amt > S.user.balance) { toast('Invalid amount', 'err'); return; }
+    S.user.balance -= amt;
+    const code = 'EMP-' + Math.random().toString(36).slice(2, 6).toUpperCase();
+    S.giftCodes.unshift({ code, amt, to: $('#gcTo').value.trim(), used: false });
+    S.txs.unshift({ t: 'Gift card bought (' + code + ')', a: -amt, d: today(), k: 'out' });
+    save(); closeModal(); renderWallet(); giftModal(); toast('Gift card ' + code + ' ready 🎁', 'ok');
+  };
+  $('#gcGo').onclick = () => {
+    const code = ($('#gcCode').value || '').trim().toUpperCase();
+    const g = S.giftCodes.find(x => x.code === code && !x.used);
+    if (code === 'WELCOME10') { S.user.balance += 10; S.txs.unshift({ t: 'Gift code WELCOME10', a: 10, d: today(), k: 'in' }); save(); closeModal(); renderWallet(); toast('+10 EC redeemed!', 'ok'); return; }
+    if (!g) { toast('Unknown or used code (try WELCOME10)', 'err'); return; }
+    g.used = true; S.user.balance += g.amt;
+    S.txs.unshift({ t: 'Gift card redeemed (' + code + ')', a: g.amt, d: today(), k: 'in' });
+    save(); closeModal(); renderWallet(); toast('+' + ec(g.amt) + ' redeemed!', 'ok');
+  };
+}
+function disputeModal(orderId) {
+  openModal('<h3>🛡️ Open a dispute' + (orderId ? ' — ' + esc(orderId) : '') + '</h3>' +
+    '<label>Order<select id="dpOrder">' + S.orders.map(o => '<option' + (o.id === orderId ? ' selected' : '') + '>' + o.id + ' — ' + esc(o.title) + '</option>').join('') + '</select></label>' +
+    '<label>Reason<select id="dpReason"><option>Not delivered</option><option>Wrong / damaged item</option><option>Digital file broken</option><option>Charged twice</option><option>Other</option></select></label>' +
+    '<label>Details<textarea id="dpText" rows="3" placeholder="What happened? What resolution do you want?"></textarea></label>' +
+    '<button class="btn primary block" id="dpGo">Submit — escrow frozen ❄</button>');
+  $('#dpGo').onclick = () => {
+    const o = $('#dpOrder').value.split(' — ')[0];
+    S.disputes.unshift({ order: o, reason: $('#dpReason').value, status: 'Under review', date: today() });
+    S.threads.unshift({ id: uid('T'), from: 'Resolution team', kind: 'dispute', title: 'Dispute: ' + o, preview: $('#dpReason').value, time: today(), unread: 1, msgs: [{ me: false, t: 'Thanks — escrow on ' + o + ' is frozen. A specialist replies within 24h. Most cases resolve in 2 days.' }] });
+    notify('Dispute opened on ' + o + ' — escrow frozen.');
+    save(); closeModal(); renderInbox(); renderDisputes(); renderInboxBadge(); toast('Dispute opened — we have got you 🛡️', 'ok'); nav('inbox'); S.inboxTab = 'disputes'; renderInbox();
+  };
+}
+
 /* ---------- events wiring ---------- */
 function wire() {
   $('#mobileMenuBtn').onclick = () => $('#mainNav').classList.toggle('open');
@@ -754,6 +1120,39 @@ function wire() {
   $$('#revTabs button').forEach(b => b.onclick = () => { S.revRange = Number(b.dataset.r); $$('#revTabs button').forEach(x => x.classList.toggle('active', x === b)); drawChart(); });
   $$('#orderTabs button').forEach(b => b.onclick = () => { S.orderTab = b.dataset.tab; save(); renderOrders(); });
   bindSearch();
+  // v3 wiring
+  const cs = $('#currencySel'); if (cs) { cs.value = cur(); cs.onchange = e => { S.user.currency = e.target.value; save(); renderAll(); toast('Prices in ' + cur(), 'ok'); }; }
+  $('#themeBtn').onclick = () => { S.theme = S.theme === 'light' ? 'dark' : 'light'; save(); applyTheme(); };
+  $('#plusPill').onclick = plusModal;
+  $('#giftBtn').onclick = giftModal;
+  const nd = $('#newDisputeBtn'); if (nd) nd.onclick = () => disputeModal();
+  const pg = $('#postGigBtn'); if (pg) pg.onclick = () => {
+    openModal('<h3>Post a request</h3><label>What do you need?<input id="grTitle" placeholder="e.g. Edit 10 product videos" /></label><div class="row2"><label>Budget<input id="grBudget" type="number" value="100" min="5" /></label><label>Category<select id="grCat"><option>Design</option><option>Marketing</option><option>Finance</option><option>Career</option><option>Fitness</option></select></label></div><button class="btn primary block" id="grGo">Post — free →</button>');
+    $('#grGo').onclick = () => {
+      const t = $('#grTitle').value.trim(); if (!t) { toast('Describe the gig', 'err'); return; }
+      S.gigRequests.unshift({ id: 'r' + Date.now(), title: t, budget: Number($('#grBudget').value) || 50, by: S.user.name.split(' ')[0] + ' (you)', bids: 0, cat: $('#grCat').value });
+      save(); closeModal(); renderServices(); toast('Request posted — sellers will bid 📝', 'ok');
+    };
+  };
+  const og = $('#offerGigBtn'); if (og) og.onclick = () => {
+    openModal('<h3>Offer a gig</h3><label>Title<input id="ngTitle" placeholder="e.g. I will audit your store" /></label><div class="row2"><label>Price<input id="ngPrice" type="number" value="80" min="5" /></label><label>Delivery<select id="ngDel"><option>1 day</option><option>2 days</option><option>3 days</option><option>5 days</option></select></label></div><label>Description<textarea id="ngDesc" rows="2"></textarea></label><button class="btn primary block" id="ngGo">Publish gig →</button>');
+    $('#ngGo').onclick = () => {
+      const t = $('#ngTitle').value.trim(); if (!t) { toast('Add a title', 'err'); return; }
+      S.gigs.unshift({ id: 'g' + Date.now(), title: t, seller: S.user.name + ' (you)', price: Number($('#ngPrice').value) || 50, rating: 5.0, orders: 0, img: '🛠️', cat: 'Design', delivery: $('#ngDel').value, desc: $('#ngDesc').value || 'Custom gig by ' + S.user.name });
+      save(); closeModal(); renderServices(); toast('Gig live! 🛠️', 'ok');
+    };
+  };
+  const gs = $('#gigSort'); if (gs) gs.onchange = renderServices;
+  const ff = $('#feedFilter'); if (ff) ff.onchange = renderCommunity;
+  const pb = $('#postBtn'); if (pb) pb.onclick = () => {
+    const t = ($('#postTitle').value || '').trim(), b = ($('#postBody').value || '').trim();
+    if (!t || !b) { toast('Add a title + story', 'err'); return; }
+    S.posts.unshift({ id: 'f' + Date.now(), author: S.user.name, role: 'Member', av: S.user.emoji || '🧑‍🚀', topic: $('#postTopic').value, title: t, text: b, likes: 0, liked: false, time: 'now', comments: [] });
+    $('#postTitle').value = ''; $('#postBody').value = '';
+    save(); renderCommunity(); toast('Posted! 🎉', 'ok');
+  };
+  const cr = $('#copyRefBtn'); if (cr) cr.onclick = () => { try { navigator.clipboard.writeText(S.user.referral); } catch (e) {} toast('Code copied: ' + S.user.referral, 'ok'); };
+  const iv = $('#inviteBtn'); if (iv) iv.onclick = () => { S.user.invites++; S.user.balance += 20; S.txs.unshift({ t: 'Referral bonus', a: 20, d: today(), k: 'in' }); notify('Invite accepted! +20 EC.'); save(); renderCommunity(); updateWalletUI(); toast('+20 EC referral bonus 🎁', 'ok'); };
   $('#howItWorksBtn').onclick = () => openModal('<h3>How Empower works ▶</h3><div class="timeline"><div class="t-step done"><div class="t-dot">1</div><div><b>Shop or list</b><div class="muted small">Buy verified goods or publish a listing in 60 seconds.</div></div></div><div class="t-step done"><div class="t-dot">2</div><div><b>Pay in EC credits</b><div class="muted small">1 EC = $1. Money sits in escrow — never sent direct.</div></div></div><div class="t-step done"><div class="t-dot">3</div><div><b>Get delivered or coached</b><div class="muted small">Confirm delivery → seller gets paid. Coaching includes recording + plan.</div></div></div></div><button class="btn primary block" onclick="closeModal()">Got it — let\'s earn</button>');
   const hb = $('#matchBtn');
   if (hb) hb.onclick = () => {
@@ -847,7 +1246,7 @@ function wire() {
   $('#exportCsvBtn').onclick = txCSV;
   $('#resetDemo').onclick = () => { if (!confirm('Reset all demo data?')) return; localStorage.removeItem(KEY); S = seed(); S.onboarded = true; save(); renderAll(); toast('Demo reset ✓'); };
   const fe = $('#footEscrow'); if (fe) fe.onclick = e => { e.preventDefault(); openModal('<h3>Escrow & returns</h3><p>Every payment is held in escrow and released only on confirmed delivery (or auto-released after 7 days). 14-day returns on physical goods. Digital goods: instant delivery + 48h refund window if broken.</p><button class="btn primary block" onclick="closeModal()">Got it</button>'); };
-  const ff = $('#footFees'); if (ff) ff.onclick = e => { e.preventDefault(); openModal('<h3>Fees — simple</h3><div class="list-row"><div class="grow"><b>Buyers</b><span>No fees, ever</span></div><span class="tag ok">$0</span></div><div class="list-row"><div class="grow"><b>Sellers</b><span>5% on sale only</span></div><span class="tag ok">5%</span></div><div class="list-row"><div class="grow"><b>Coaches</b><span>10% on bookings</span></div><span class="tag ok">10%</span></div><button class="btn primary block" style="margin-top:10px" onclick="closeModal()">Close</button>'); };
+  const ffee = $('#footFees'); if (ffee) ffee.onclick = e => { e.preventDefault(); openModal('<h3>Fees — simple</h3><div class="list-row"><div class="grow"><b>Buyers</b><span>No fees, ever</span></div><span class="tag ok">$0</span></div><div class="list-row"><div class="grow"><b>Sellers</b><span>5% on sale only</span></div><span class="tag ok">5%</span></div><div class="list-row"><div class="grow"><b>Coaches</b><span>10% on bookings</span></div><span class="tag ok">10%</span></div><button class="btn primary block" style="margin-top:10px" onclick="closeModal()">Close</button>'); };
   const fh = $('#footHelp'); if (fh) fh.onclick = e => { e.preventDefault(); openModal('<h3>Help center</h3><p class="muted">Coupon codes: EMPOWER10 (10%), WELCOME15 (15%). Press <b>/</b> to search. Data is stored locally — Reset demo restores everything.</p><button class="btn primary block" onclick="closeModal()">Close</button>'); };
 }
 
@@ -865,7 +1264,8 @@ function liveSim() {
   }, 15000);
 }
 function renderAll() {
-  renderMarket(); renderCoaches(); renderSell(); renderWallet(); renderOrders(); renderDashboard(); renderWishlist(); renderNotifBadge();
+  applyTheme(); syncPlus();
+  renderMarket(); renderDeals(); renderServices(); renderLearn(); renderCoaches(); renderCommunity(); renderInbox(); renderSell(); renderWallet(); renderOrders(); renderDashboard(); renderWishlist(); renderNotifBadge(); renderInboxBadge();
   const h = (location.hash || '').replace('#/', '');
   if (h && VIEWS.indexOf(h) >= 0 && h !== 'marketplace') nav(h);
 }
@@ -873,3 +1273,4 @@ wire();
 renderAll();
 maybeOnboard();
 liveSim();
+setInterval(tickDeals, 1000);

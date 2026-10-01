@@ -7,6 +7,8 @@
 <meta name="description" content="Empower is the virtual economy for goods + coaching. Shop verified sellers, sell in 60 seconds, book vetted coaches, get paid in Empower Credits." />
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='22' fill='%237c3aed'/><text x='50' y='70' font-size='54' text-anchor='middle' fill='white' font-family='Arial' font-weight='bold'>E</text></svg>" />
 <link rel="stylesheet" href="styles.css" />
+<link rel="manifest" href="manifest.json" />
+<meta name="theme-color" content="#0b0b14" />
 </head>
 <body>
 <div id="bg-blobs" aria-hidden="true"><span></span><span></span><span></span></div>
@@ -24,9 +26,12 @@
       <div class="search-drop" id="searchDrop" hidden></div>
     </div>
     <div class="top-actions">
+      <button class="pill-balance plus-pill" id="plusPill" title="Empower Plus">★ Plus</button>
       <button class="pill-balance" data-nav="wallet" title="Wallet — 1 EC = $1">
         <span class="coin">◉</span><span id="walletBalanceTop">1,250 EC</span>
       </button>
+      <button class="icon-btn" id="themeBtn" aria-label="Theme">🌙</button>
+      <button class="icon-btn" id="inboxBtn" data-nav="inbox" aria-label="Inbox">✉️<em id="inboxCount" hidden>0</em></button>
       <button class="icon-btn" id="notifBtn" aria-label="Notifications">🔔<em id="notifCount" hidden>0</em></button>
       <button class="icon-btn" id="wishBtn" data-nav="wishlist" aria-label="Wishlist">♥<em id="wishCount" hidden>0</em></button>
       <button class="icon-btn cart-btn" id="cartBtn" aria-label="Cart">🛒<em id="cartCount">0</em></button>
@@ -35,11 +40,16 @@
   </div>
   <nav class="mainnav" id="mainNav">
     <button data-nav="marketplace" class="active">🛍 Marketplace</button>
+    <button data-nav="deals">🔥 Deals</button>
+    <button data-nav="services">🛠️ Services</button>
+    <button data-nav="learn">🎬 Learn</button>
     <button data-nav="coaches">🎓 Coaches</button>
+    <button data-nav="community">💬 Community</button>
     <button data-nav="sell">＋ Sell</button>
     <button data-nav="become-coach">★ Become a Coach</button>
     <button data-nav="dashboard">📊 Dashboard</button>
     <button data-nav="orders">📦 Orders</button>
+    <button data-nav="inbox">✉️ Inbox</button>
     <button data-nav="wishlist">♥ Wishlist</button>
     <button data-nav="wallet">◉ Wallet</button>
   </nav>
@@ -101,6 +111,32 @@
     </div>
     <div class="result-line"><span id="resultCount"></span><span class="muted" id="couponHint">Try code <button class="linklike" id="couponApplyHint">EMPOWER10</button> for 10% off</span></div>
     <div class="grid" id="productGrid"></div>
+  </section>
+
+  <!-- DEALS -->
+  <section class="view" id="view-deals">
+    <div class="page-head"><div><h2>🔥 Flash Deals</h2><p>Up to 40% off. New drops daily. When the timer hits zero, prices go back up.</p></div>
+      <div class="page-head-actions"><span class="fee-chip" id="dealTimer">⏳ --:--:--</span>
+      <select id="currencySel" aria-label="Currency"><option value="USD">USD $</option><option value="EUR">EUR €</option><option value="GBP">GBP £</option></select></div></div>
+    <div class="grid" id="dealsGrid"></div>
+  </section>
+
+  <!-- SERVICES -->
+  <section class="view" id="view-services">
+    <div class="page-head"><div><h2>Hire a freelancer 🛠️</h2><p>Fixed-price gigs with escrow, revisions & on-time guarantees. Or post a request and let sellers come to you.</p></div>
+      <div class="page-head-actions"><button class="btn" id="postGigBtn">＋ Post a request</button><button class="btn primary" id="offerGigBtn">＋ Offer a gig</button></div></div>
+    <div class="toolbar card-flat"><div class="pills" id="gigPills"></div>
+      <div class="toolbar-right"><select id="gigSort"><option value="rating">Top rated</option><option value="price-asc">Price ↑</option><option value="price-desc">Price ↓</option><option value="orders">Most orders</option></select></div></div>
+    <div class="grid" id="gigGrid"></div>
+    <div class="card"><h3>Open requests from buyers</h3><div id="gigRequests"></div></div>
+  </section>
+
+  <!-- LEARN -->
+  <section class="view" id="view-learn">
+    <div class="page-head"><div><h2>Learn & earn 🎬</h2><p>Bite-size courses from top sellers & coaches. Enroll with EC, track progress, earn certificates.</p></div>
+      <div class="page-head-actions"><span class="fee-chip" id="learnStats">0 enrolled</span></div></div>
+    <div class="grid" id="courseGrid"></div>
+    <div class="card"><h3>My learning</h3><div id="myLearning"></div></div>
   </section>
 
   <!-- COACHES -->
@@ -229,6 +265,35 @@
     <div class="card"><div id="ordersList"></div></div>
   </section>
 
+  <!-- COMMUNITY -->
+  <section class="view" id="view-community">
+    <div class="page-head"><div><h2>Community 💬</h2><p>Wins, questions, restocks & collabs from earners like you.</p></div>
+      <div class="page-head-actions"><select id="feedFilter"><option value="All">All topics</option><option value="Wins">🏆 Wins</option><option value="Questions">❓ Questions</option><option value="Collabs">🤝 Collabs</option><option value="Restocks">📦 Restocks</option></select></div></div>
+    <div class="split">
+      <div class="card"><h3>Share an update</h3>
+        <div class="row2"><select id="postTopic"><option value="Wins">🏆 Wins</option><option value="Questions">❓ Questions</option><option value="Collabs">🤝 Collabs</option><option value="Restocks">📦 Restocks</option></select><input id="postTitle" placeholder="Title — e.g. First $1k month!" /></div>
+        <textarea id="postBody" rows="3" placeholder="Tell the story… what worked, what flopped, what next?"></textarea>
+        <button class="btn primary block" id="postBtn" style="margin-top:8px">Post to community →</button>
+      </div>
+      <div class="card"><h3>🏆 Top contributors</h3><div id="topContrib"></div>
+        <h3 style="margin-top:12px">🎁 Refer & earn</h3><p class="muted small">Give 10 EC, get 20 EC. Your code:</p>
+        <div class="ref-box"><b id="refCode">JORDAN-2026</b><button class="btn small" id="copyRefBtn">Copy</button><button class="btn small primary" id="inviteBtn">Simulate invite +20 EC</button></div>
+      </div>
+    </div>
+    <div id="feedList" style="margin-top:14px"></div>
+  </section>
+
+  <!-- INBOX -->
+  <section class="view" id="view-inbox">
+    <div class="page-head"><div><h2>Inbox ✉️</h2><p>Coaches, buyers, support & disputes — one thread per topic.</p></div>
+      <div class="page-head-actions"><div class="tabs" id="inboxTabs"><button data-it="all" class="active">All</button><button data-it="coaches">Coaches</button><button data-it="orders">Orders</button><button data-it="disputes">Disputes</button></div></div></div>
+    <div class="inbox-wrap">
+      <div class="card inbox-list"><div id="threadList"></div></div>
+      <div class="card inbox-thread"><div id="threadView"><div class="empty"><span class="big">✉️</span><b>Pick a conversation</b></div></div></div>
+    </div>
+    <div class="card"><div class="card-head"><h3>🛡️ Resolution center</h3><button class="btn small" id="newDisputeBtn">＋ Open dispute</button></div><div id="disputeList"></div></div>
+  </section>
+
   <!-- WISHLIST -->
   <section class="view" id="view-wishlist">
     <div class="page-head"><div><h2>Wishlist ♥</h2><p>Saved items + price-drop alerts.</p></div></div>
@@ -249,6 +314,7 @@
             <button class="btn primary" id="addFundsBtn">＋ Add funds</button>
             <button class="btn" id="payoutBtn">Cash out</button>
             <button class="btn" id="transferBtn">Send</button>
+            <button class="btn" id="giftBtn">🎁 Gift card</button>
           </div>
           <div class="pay-methods"><div>💳 Visa •• 4242</div><div>🏦 Bank •• 6789</div><div>◉ Empower Pay instant</div></div>
         </div>
@@ -266,11 +332,11 @@
   <div class="foot-grid">
     <div><div class="brand"><span class="brand-mark sm">E</span><b>Empower</b></div>
       <p class="muted small">The virtual economy for goods + coaching.<br />Demo build • data stored locally in your browser.</p></div>
-    <div><b>Marketplace</b><a href="#/marketplace" data-nav="marketplace">Browse</a><a href="#/sell" data-nav="sell">Sell an item</a><a href="#/wishlist" data-nav="wishlist">Wishlist</a></div>
-    <div><b>Coaching</b><a href="#/coaches" data-nav="coaches">Find a coach</a><a href="#/become-coach" data-nav="become-coach">Become a coach</a></div>
+    <div><b>Marketplace</b><a href="#/marketplace" data-nav="marketplace">Browse</a><a href="#/deals" data-nav="deals">Flash deals</a><a href="#/services" data-nav="services">Hire services</a><a href="#/learn" data-nav="learn">Courses</a><a href="#/sell" data-nav="sell">Sell an item</a><a href="#/wishlist" data-nav="wishlist">Wishlist</a></div>
+    <div><b>Coaching</b><a href="#/coaches" data-nav="coaches">Find a coach</a><a href="#/become-coach" data-nav="become-coach">Become a coach</a><a href="#/community" data-nav="community">Community</a><a href="#/inbox" data-nav="inbox">Inbox & disputes</a></div>
     <div><b>Trust</b><a href="#" id="footEscrow">Escrow & returns</a><a href="#" id="footFees">Fees</a><a href="#" id="footHelp">Help center</a></div>
   </div>
-  <div class="foot-base muted small"><span>Seller protection • Escrow • Verified coaches • 2-day payouts</span><span>v2.0 final</span></div>
+  <div class="foot-base muted small"><span>Seller protection • Escrow • Verified coaches • 2-day payouts</span><span>v3.0 expanded</span></div>
 </footer>
 
 <div class="overlay" id="overlay"></div>
