@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <rect width="64" height="64" rx="14" fill="#0b0d10"/>
+  <rect x="1" y="1" width="62" height="62" rx="13" fill="none" stroke="#2e3947" stroke-width="2"/>
+  <path d="M14 46 L26 30 L38 38 L50 18" fill="none" stroke="#d8ff3e" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+  <circle cx="14" cy="46" r="4.5" fill="#d8ff3e"/>
+  <circle cx="26" cy="30" r="4.5" fill="#d8ff3e"/>
+  <circle cx="38" cy="38" r="4.5" fill="#d8ff3e"/>
+  <circle cx="50" cy="18" r="4.5" fill="#d8ff3e"/>
+  <text x="32" y="59" text-anchor="middle" font-family="system-ui, sans-serif" font-weight="800" font-size="9" fill="#8b98a6">VANTAGE-ARS</text>
+</svg>
