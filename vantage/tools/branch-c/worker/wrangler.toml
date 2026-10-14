@@ -1,0 +1,11 @@
+name = "vantage-branch-c"
+# Custom domain: api.vantage-ars.co.za (Cloudflare dash -> Workers -> vantage-branch-c -> Triggers -> Custom Domain)
+main = "worker.js"
+compatibility_date = "2026-09-01"
+
+# Free tier: 100k requests/day. Set after the human Paddle KYC step:
+#   wrangler secret put PADDLE_WEBHOOK_SECRET
+#   wrangler secret put GH_PAT
+#   wrangler secret put GH_REPO
+[vars]
+PADDLE_MODE = "sandbox"

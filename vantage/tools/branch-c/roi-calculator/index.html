@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>VoIP ROI Calculator</title>
+<meta name="description" content="Work out the real monthly saving and payback period of switching from a traditional PBX to hosted VoIP - including the costs the sales deck forgets.">
+<link rel="canonical" href="https://tools.vantage-ars.co.za/roi-calculator/">
+<link rel="icon" type="image/svg+xml" href="/favicon.svg">
+<style>
+:root{--bg:#0b0e14;--card:#141a24;--text:#d9e2ef;--dim:#8b98ab;--accent:#00b7c2;--border:#1e2836;--warn:#ff6b6b}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font:16px/1.6 -apple-system,'Segoe UI',Roboto,sans-serif;padding:24px}
+.wrap{max-width:680px;margin:0 auto}
+h1{font-size:1.5rem;margin-bottom:4px}
+.sub{color:var(--dim);font-size:.9rem;margin-bottom:24px}
+.card{background:var(--card);border:1px solid var(--border);border-radius:8px;padding:20px;margin-bottom:16px}
+label{display:block;font-size:.8rem;color:var(--dim);margin:12px 0 4px}
+input,select{width:100%;background:#0b0e14;border:1px solid var(--border);color:var(--text);padding:10px;border-radius:6px;font-size:1rem}
+table{width:100%;border-collapse:collapse;margin-top:8px;font-size:.9rem}
+td,th{border:1px solid var(--border);padding:8px 10px;text-align:left}
+th{color:var(--dim);font-weight:600;background:#0b0e14}td:last-child,th:last-child{text-align:right}
+td:last-child{color:var(--accent);font-family:monospace}
+.big{font-size:1.4rem;color:var(--accent);font-family:monospace}
+.note{color:var(--dim);font-size:.8rem;margin-top:12px}
+.warn{color:var(--warn)}
+a{color:var(--accent)}
+</style>
+</head>
+<body>
+<div class="wrap">
+<h1>VoIP ROI Calculator</h1>
+<p class="sub">Switching from a traditional PBX? Here is the saving the sales deck won't show you - and the payback period on what you'll actually spend.</p>
+<div class="card">
+<label for="lines">Extensions / users</label>
+<input id="lines" type="number" min="0" value="20" oninput="calc()">
+<label for="pbx">Current monthly cost: PBX line rental + calls (ZAR)</label>
+<input id="pbx" type="number" min="0" value="12000" oninput="calc()">
+<label for="voip">Proposed hosted VoIP: per-user monthly incl. calls (ZAR)</label>
+<input id="voip" type="number" min="0" value="180" oninput="calc()">
+<label for="setup">One-time switch cost: handsets + setup + training (ZAR)</label>
+<input id="setup" type="number" min="0" value="30000" oninput="calc()">
+<label for="band">Extra bandwidth needed (Mbps, from the bandwidth calculator)</label>
+<input id="band" type="number" min="0" step="0.1" value="4" oninput="calc()">
+<label for="bandcost">Cost per Mbps per month on a dedicated/burstable link (ZAR)</label>
+<input id="bandcost" type="number" min="0" value="150" oninput="calc()">
+<label for="train">Productivity loss during cutover (one-time, ZAR estimate)</label>
+<input id="train" type="number" min="0" value="5000" oninput="calc()">
+</div>
+<div class="card">
+<table id="out"><tbody></tbody></table>
+<p class="note" id="verdict"></p>
+</div>
+<div class="card">
+<p class="note">Math shown, no black box:</p>
+<p class="note">voip cost = users x per-user + Mbps x per-Mbps<br>
+monthly saving = pbx cost - voip cost<br>
+payback = (setup + cutover loss) / monthly saving (months)<br>
+3-year net = monthly saving x 36 - setup - cutover loss</p>
+<p class="note">Honest caveats: this assumes the quoted per-user price really includes call costs - many don't include mobile or international. Run the <a href="/voip-bandwidth/calculator/">VoIP bandwidth calculator</a> to size the line first; a link that is too small makes "savings" disappear into jitter.</p>
+<p class="note">Currency is ZAR throughout. If your provider bills in USD or GBP, convert with a dated rate and keep the original figure - do not silently swap one for the other.</p>
+</div>
+<script>
+function fmt(n){ return (!Number.isFinite(n) ? '-' : 'R' + Math.round(n).toLocaleString('en-ZA')); }
+function num(id){
+  const v = parseFloat(document.getElementById(id).value);
+  return Number.isFinite(v) && v >= 0 ? v : 0;
+}
+function calc(){
+  const lines = num('lines'), pbx = num('pbx'), per = num('voip'), setup = num('setup'),
+        mb = num('band'), mbc = num('bandcost'), cut = num('train');
+
+  const voip = lines*per + mb*mbc;
+  const save = pbx - voip;
+  const oneOff = setup + cut;
+  const rows = [];
+  let verdict = '';
+  let cls = '';
+
+  rows.push(['New VoIP monthly cost', fmt(voip)]);
+
+  if (save > 0) {
+    const pay = oneOff / save;             // safe: save > 0, so the denominator is never 0
+    const net3 = save*36 - oneOff;
+    rows.push(['Monthly saving', fmt(save)]);
+    rows.push(['Payback period', pay.toFixed(1) + ' months']);
+    rows.push(['3-year net saving', fmt(net3)]);
+    cls = pay < 12 ? '' : 'warn';
+    if (net3 < 0) {
+      verdict = 'Verdict: cheaper per month, but the one-time cost is not recovered in 3 years. Negotiate setup down or keep the PBX.';
+    } else if (pay < 12) {
+      verdict = 'Verdict: pays for itself within a year - strong case.';
+    } else {
+      verdict = 'Verdict: works, but payback is over a year - negotiate setup costs down.';
+    }
+  } else if (save === 0) {
+    // The case the old version printed a misleading figure for.
+    rows.push(['Monthly saving', 'none - the two options cost the same']);
+    rows.push(['Payback period', 'undefined - nothing is saved']);
+    rows.push(['3-year net', fmt(-oneOff)]);
+    verdict = 'Verdict: no monthly difference. At these numbers the switch buys capability, not money - decide on features, not ROI.';
+  } else {
+    rows.push(['Monthly saving', 'none - VoIP costs MORE']);
+    rows.push(['3-year net', fmt(save*36 - oneOff)]);
+    verdict = 'Verdict: at these numbers the switch loses money every month. Check whether the PBX cost includes calls, and re-quote.';
+  }
+
+  document.querySelector('#out tbody').innerHTML =
+    '<tr><th scope="col">Result</th><th scope="col">Value</th></tr>' +
+    rows.map((r,i) => `<tr><td>${r[0]}</td><td${(i===1 && cls)?` class="${cls}"`:''}>${r[1]}</td></tr>`).join('');
+  document.getElementById('verdict').textContent = verdict;
+}
+calc();
+</script>
+</body>
+</html>

@@ -1,0 +1,19 @@
+# Build outputs - rebuilt by CI/local runs, never committed
+sites/*/dist/
+sites/branch-b/*/dist/
+dashboard/dist/
+
+# Never commit secrets or keys
+.env
+.env.*
+*.pem
+service-account*.json
+
+# OS noise
+.DS_Store
+Thumbs.db
+
+# Backup bundles live as weekly Actions artifacts (retention 90d), not in git
+backup/
+
+# The ledger IS committed (it is the money record) - do not ignore data/ledger/

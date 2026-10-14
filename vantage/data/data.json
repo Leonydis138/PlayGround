@@ -1,0 +1,163 @@
+{
+  "_schema_version": 1,
+  "updated_at": "2026-09-26T00:00:00Z",
+  "status_line": "Bootstrap - no data yet",
+  "capacity": {
+    "_note": "Company-wide content capacity. The Allocator conserves this total by transferring quota between branches; only an explicit change here alters the total.",
+    "total_articles_per_week": 5,
+    "capacity_last_changed": "2026-09-26T00:00:00Z"
+  },
+  "branches": {
+    "branch-a": {
+      "name": "Authority Niche (VoIP/Networking/ITSM)",
+      "mode": "active",
+      "quota": {
+        "articles_per_week": 3
+      },
+      "recovery_streak": 0,
+      "metrics": {
+        "traffic_7d": null,
+        "traffic_30d": null,
+        "clicks_30d": null,
+        "conversions_30d": null,
+        "revenue_30d": null,
+        "revenue_growth_30d_pct": null,
+        "traffic_growth_30d_pct": null,
+        "conversion_rate_pct": null
+      },
+      "metrics_as_of": null,
+      "score": null
+    },
+    "branch-b": {
+      "name": "Opportunistic Affiliate Engine",
+      "mode": "active",
+      "quota": {
+        "articles_per_week": 2
+      },
+      "recovery_streak": 0,
+      "metrics": {
+        "traffic_7d": null,
+        "traffic_30d": null,
+        "clicks_30d": null,
+        "conversions_30d": null,
+        "revenue_30d": null,
+        "revenue_growth_30d_pct": null,
+        "traffic_growth_30d_pct": null,
+        "conversion_rate_pct": null
+      },
+      "metrics_as_of": null,
+      "score": null,
+      "clusters": [
+        {
+          "name": "example-test-cluster",
+          "status": "test",
+          "started": "2026-09-26",
+          "note": "Replace with a real Scout-proposed cluster after CEO approval.",
+          "metrics": {
+            "traffic_30d": null,
+            "clicks_30d": null,
+            "conversions_30d": null,
+            "revenue_30d": null,
+            "revenue_growth_30d_pct": null,
+            "traffic_growth_30d_pct": null,
+            "conversion_rate_pct": null
+          },
+          "metrics_as_of": null,
+          "score": null,
+          "verdict": null
+        }
+      ]
+    },
+    "branch-c": {
+      "name": "Micro-SaaS (five calculator candidates built)",
+      "mode": "active",
+      "quota": {
+        "articles_per_week": 0
+      },
+      "recovery_streak": 0,
+      "metrics": {
+        "traffic_7d": null,
+        "traffic_30d": null,
+        "signups_30d": null,
+        "paid_conversions_30d": null,
+        "revenue_30d": null,
+        "revenue_growth_30d_pct": null,
+        "traffic_growth_30d_pct": null,
+        "conversion_rate_pct": null
+      },
+      "metrics_as_of": null,
+      "score": null
+    }
+  },
+  "revenue": {
+    "this_week": 0,
+    "this_month": 0,
+    "all_time": 0,
+    "trend": [],
+    "by_branch_30d": {
+      "branch-a": 0,
+      "branch-b": 0,
+      "branch-c": 0
+    }
+  },
+  "decision_queue": [
+    {
+      "id": "dq-001",
+      "type": "affiliate-signup",
+      "from_agent": "Scout",
+      "title": "Shortlist initial affiliate programs (Awin, Impact, CJ, direct SaaS)",
+      "detail": "Scout should propose 5 programs fitting Branch A on first run. CEO clicks apply - agents cannot sign up.",
+      "status": "pending",
+      "created_at": "2026-09-26T00:00:00Z"
+    },
+    {
+      "id": "dq-002",
+      "type": "product-pick",
+      "from_agent": "Product/Dev",
+      "title": "Pick the Branch C flagship tool",
+      "detail": "All five calculators are built (voip-bandwidth, subnet, sla, downtime, roi). Recommend: VoIP bandwidth calculator - strongest fit with the Branch A audience and practitioner credibility. CEO picks one; it gets real copy, its own Pages deploy, and a Pro tier via Paddle. The other four stay free and keep earning Search trust.",
+      "status": "pending",
+      "created_at": "2026-09-26T00:00:00Z"
+    }
+  ],
+  "activity_feed": [
+    {
+      "agent": "System",
+      "when": "2026-09-26T00:00:00Z",
+      "what": "Phase 1 skeleton created. Awaiting first CEO-triggered run."
+    },
+    {
+      "agent": "Product/Dev",
+      "when": "2026-09-26T00:00:00Z",
+      "what": "Built four working calculator candidates + Paddle webhook worker. Flagship choice queued for CEO."
+    },
+    {
+      "agent": "System",
+      "when": "2026-10-10T00:00:00Z",
+      "what": "Release-blocker pass: bootstrap metrics are now null (unknown) instead of 0, so the Allocator cannot mistake 'no data' for 'no performance'."
+    }
+  ],
+  "ledger": {
+    "currency": "ZAR",
+    "entries": []
+  },
+  "sales_pipeline": [],
+  "autonomy": {
+    "level": 1
+  },
+  "policy": {
+    "_note": "Runtime policy for scripts/lib/policy.mjs. Fails closed: an unknown action, environment or rule set disables mutations.",
+    "kill_switch": false,
+    "budget": {
+      "currency": "ZAR",
+      "per_run_spend": 0,
+      "monthly_spend": 0
+    },
+    "limits": {
+      "max_publications_per_run": 3,
+      "max_messages_per_hour": 0,
+      "max_retries_per_action": 3
+    }
+  },
+  "schema_version": 3
+}

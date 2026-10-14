@@ -1,0 +1,4 @@
+# Per-sale entries land here as paddle-<transaction-id>.json via the Branch C
+# Worker webhook. The Accountant agent reconciles this against Paddle's payout
+# reports monthly. The folder is here so local runs and tests have a target;
+# the Worker creates files via the GitHub API without needing it to pre-exist.

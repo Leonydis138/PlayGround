@@ -1,0 +1,11 @@
+# Cloudflare Pages redirects - keep internal files off the public paths.
+# The whole tools/branch-c/ dir is deployed as one Pages project, which
+# would otherwise serve worker.js and paddle-integration.md as plain text.
+/worker/*               /  301
+/worker                 /  301
+/paddle-integration.md  /  301
+/README.md              /  301
+/sitemap.xml            /  301
+/robots.txt             /  301
+# Serve the styled 404 for unknown paths
+/*                      /404.html  404

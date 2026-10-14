@@ -8,6 +8,8 @@
 <meta property="og:title" content="Empower — Buy, Sell & Get Coached" />
 <meta property="og:description" content="One wallet for goods, gigs, courses, coaching + community. 1 EC = $1, escrow protected." />
 <meta property="og:type" content="website" />
+<meta name="twitter:card" content="summary_large_image" />
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"WebApplication","name":"Empower","applicationCategory":"ShoppingApplication","operatingSystem":"Web","offers":{"@type":"Offer","price":"0","priceCurrency":"USD"},"description":"Shared marketplace + private profiles: shop, sell, coach, learn, auctions, events."}</script>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='22' fill='%237c3aed'/><text x='50' y='70' font-size='54' text-anchor='middle' fill='white' font-family='Arial' font-weight='bold'>E</text></svg>" />
 <link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='22' fill='%237c3aed'/><text x='50' y='70' font-size='54' text-anchor='middle' fill='white' font-family='Arial' font-weight='bold'>E</text></svg>" />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -20,7 +22,7 @@
 <body>
 <a class="skip-link" href="#app">Skip to content</a>
 <div id="bg-blobs" aria-hidden="true"><span></span><span></span><span></span></div>
-<div class="announce" id="announceBar">⚡ Flash week: extra 10% off with <button class="linklike" id="announceCoupon">EMPOWER10</button> • Free shipping over $75 • <a href="#/auctions" data-nav="auctions">Live auctions ending soon →</a></div>
+<div class="announce" id="announceBar">⚡ Flash week: extra 10% off with <button class="linklike" id="announceCoupon">EMPOWER10</button> • Free shipping over $75 • <a href="#/auctions" data-nav="auctions">Live auctions ending soon →</a> <button class="linklike" id="announceHide" aria-label="Dismiss">✕</button></div>
 
 <header class="topbar">
   <div class="topbar-inner">
@@ -40,6 +42,7 @@
         <span class="coin">◉</span><span id="walletBalanceTop">1,250 EC</span>
       </button>
       <button class="icon-btn" id="themeBtn" aria-label="Theme">🌙</button>
+      <span class="net-badge on" id="netBadge" role="status" title="Connected">● Online</span>
       <button class="icon-btn" id="inboxBtn" data-nav="inbox" aria-label="Inbox">✉️<em id="inboxCount" hidden>0</em></button>
       <button class="icon-btn" id="notifBtn" aria-label="Notifications">🔔<em id="notifCount" hidden>0</em></button>
       <button class="icon-btn" id="wishBtn" data-nav="wishlist" aria-label="Wishlist">♥<em id="wishCount" hidden>0</em></button>
@@ -147,7 +150,9 @@
         <label class="check"><input type="checkbox" id="stockToggle" /> In stock</label>
       </div>
     </div>
-    <div class="result-line"><span id="resultCount"></span><span class="muted" id="couponHint">Try code <button class="linklike" id="couponApplyHint">EMPOWER10</button> for 10% off</span></div>
+    <div class="result-line"><span id="resultCount"></span><span class="muted" id="couponHint">Try code <button class="linklike" id="couponApplyHint">EMPOWER10</button> for 10% off <button class="btn small" id="saveSearchBtn" hidden>🔔 Save search</button></span></div>
+    <div class="card-flat" id="savedSearchesWrap" style="margin-bottom:14px"><div class="rail-head" style="margin-bottom:8px"><h3>🔔 Saved searches</h3><span class="muted small">We ping you when new matches land</span></div><div id="savedSearches"></div></div>
+    <div class="rail-wrap"><div class="rail-head"><h3>📸 Stories — drops & behind the scenes</h3><span class="muted small">Tap to view • 24h</span></div><div class="stories-rail" id="storiesRail"></div></div>
     <div class="rail-wrap"><div class="rail-head"><h3>🔥 Trending now</h3><button class="linklike" data-nav="deals">View deals →</button></div><div class="rail" id="trendRail"></div></div>
     <div class="grid" id="productGrid"></div>
     <div class="rail-wrap"><div class="rail-head"><h3>🕘 Recently viewed</h3><button class="linklike" id="clearRecentBtn">Clear</button></div><div class="rail" id="recentRail"></div></div>
@@ -252,9 +257,17 @@
           <div class="card-head"><h3>My listings</h3><button class="btn small" id="addSampleBtn">＋ Sample</button></div>
           <div id="myListings"></div>
         </div>
-        <div class="card tips"><h3>Seller tips 💡</h3>
-          <ul><li>Listings with real photos sell <b>3.2×</b> more.</li><li>Reply within <b>2h</b> → +22% conversion.</li><li>Price ending in <b>.00 / .49</b> converts best.</li></ul>
+        <div class="card tips"><div class="card-head"><h3>Seller tools 🛠️</h3></div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px"><button class="btn small" id="bulkPriceBtn">🏷 Bulk price</button><button class="btn small" id="bulkPauseBtn">⏸ Bulk pause</button><button class="btn small" id="bulkStockBtn">🗂 Bulk restock</button></div>
+          <h3 style="margin-top:6px">Seller tips 💡</h3>
+          <ul><li>Listings with real photos sell <b>3.2×</b> more.</li><li>Reply within <b>2h</b> → +22% conversion.</li><li>Price ending in <b>.00 / .49</b> converts best.</li><li>Higher tiers cut your fee to <b>2%</b>.</li></ul>
         </div>
+        <div id="myTierBox"></div>
+      </div>
+      <div class="card" style="margin-top:14px">
+        <div class="card-head"><div><h3 style="margin:0">📈 Analytics</h3><small class="muted">Computed live from your listings, orders and buyer data</small></div>
+          <button class="btn small" id="exportAnalyticsBtn">Export CSV</button></div>
+        <div id="analyticsBox"></div>
       </div>
     </div>
   </section>
@@ -333,11 +346,12 @@
       <div class="page-head-actions"><select id="feedFilter"><option value="All">All topics</option><option value="Wins">🏆 Wins</option><option value="Questions">❓ Questions</option><option value="Collabs">🤝 Collabs</option><option value="Restocks">📦 Restocks</option></select></div></div>
     <div class="split">
       <div class="card"><h3>Share an update</h3>
-        <div class="row2"><select id="postTopic"><option value="Wins">🏆 Wins</option><option value="Questions">❓ Questions</option><option value="Collabs">🤝 Collabs</option><option value="Restocks">📦 Restocks</option></select><input id="postTitle" placeholder="Title — e.g. First $1k month!" /></div>
-        <textarea id="postBody" rows="3" placeholder="Tell the story… what worked, what flopped, what next?"></textarea>
+        <div class="row2"><select id="postTopic"><option value="Wins">🏆 Wins</option><option value="Questions">❓ Questions</option><option value="Collabs">🤝 Collabs</option><option value="Restocks">📦 Restocks</option></select><input id="postTitle" aria-label="Post title" placeholder="Title — e.g. First $1k month!" /></div>
+        <textarea id="postBody" aria-label="Post body" rows="3" placeholder="Tell the story… what worked, what flopped, what next?"></textarea>
         <button class="btn primary block" id="postBtn" style="margin-top:8px">Post to community →</button>
       </div>
       <div class="card"><h3>🏆 Top contributors</h3><div id="topContrib"></div>
+        <h3 style="margin-top:12px">📊 Weekly poll</h3><div id="pollBox"></div>
         <h3 style="margin-top:12px">🎁 Refer & earn</h3><p class="muted small">Give 10 EC, get 20 EC. Your code:</p>
         <div class="ref-box"><b id="refCode">JORDAN-2026</b><button class="btn small" id="copyRefBtn">Copy</button><button class="btn small primary" id="inviteBtn">Simulate invite +20 EC</button></div>
       </div>
@@ -359,7 +373,7 @@
   <!-- PEOPLE: shared directory, like FB friends / IG discover -->
   <section class="view" id="view-people">
     <div class="page-head"><div><h2>👥 People on Empower</h2><p>Everyone shares the same marketplace — follow sellers, coaches & friends. Click anyone for their public profile.</p></div>
-      <div class="page-head-actions"><input id="peopleSearch" placeholder="Search name, handle, bio…" style="min-width:220px" /></div></div>
+      <div class="page-head-actions"><input id="peopleSearch" aria-label="Search people" placeholder="Search name, handle, bio…" style="min-width:220px" /></div></div>
     <div class="grid" id="peopleGrid"></div>
   </section>
 
@@ -395,14 +409,18 @@
       <div class="card"><h3>Badges</h3><div id="badgeGrid" class="badge-grid"></div>
         <h3 style="margin-top:12px">Redeem</h3><div id="redeemBox"></div></div>
       <div class="card"><h3>🏅 Weekly leaderboard</h3><div id="leaderList"></div>
+        <h3 style="margin-top:12px">📈 Today's top earners</h3><div id="dailyBoard"></div>
         <h3 style="margin-top:12px">How to earn</h3><div class="muted small">Buy +10 • Sell +25 • Book coach +20 • Finish lesson +15 • Post +5 • Win auction +30 • Check-in +10 (+streak bonus)</div></div>
     </div>
   </section>
 
   <!-- WISHLIST -->
   <section class="view" id="view-wishlist">
-    <div class="page-head"><div><h2>Wishlist ♥</h2><p>Saved items + price-drop alerts.</p></div></div>
+    <div class="page-head"><div><h2>Wishlist ♥</h2><p>Saved items + price-drop alerts. Set a target price and we'll ping you.</p></div>
+    <div class="page-head-actions"><button class="btn small" id="checkAlertsBtn">⚡ Check price drops now</button></div></div>
+    <div class="wish-bar"><div class="chips" id="wishTabs" role="tablist" aria-label="Wishlist collections"></div><div class="row-actions" id="wishActions"></div></div>
     <div class="grid" id="wishGrid"></div>
+    <div class="card"><h3>🔔 Price alerts</h3><div id="alertsList"></div></div>
   </section>
 
   <!-- WALLET -->
@@ -456,12 +474,30 @@
           <label class="check"><input type="checkbox" id="setNotifOutbid" checked /> Outbid alerts</label>
           <label class="check"><input type="checkbox" id="setNotifPrice" checked /> Price-drop alerts</label>
           <h3 style="margin-top:12px">Payment methods</h3><div id="payList"></div>
-          <div style="display:flex;gap:8px;margin-top:8px"><input id="newPayInput" placeholder="e.g. Amex •• 1005" /><button class="btn small" id="addPayBtn">Add</button></div>
+          <div style="display:flex;gap:8px;margin-top:8px"><input id="newPayInput" aria-label="New payment method" placeholder="e.g. Amex •• 1005" /><button class="btn small" id="addPayBtn">Add</button></div>
         </div>
+        <div class="card"><h3>🔐 Security & sessions</h3>
+          <div class="security-grid">
+            <label>New password (6+ chars)<input id="newPw" type="password" placeholder="••••••" /></label>
+            <div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn small primary" id="changePwBtn">Change password</button><button class="btn small" id="exportMeBtn">⬇ Export my data</button><button class="btn small danger" id="deleteAcctBtn">Delete account</button></div>
+            <div class="muted small">Signed in as <b id="sessEmail">—</b> • <span id="sessInfo">—</span></div>
+            <div id="sessList"></div>
+          </div>
+          <h3 style="margin-top:12px">✅ Verification</h3><div id="verifyBox"></div>
+        </div>
+        <div class="card"><h3>🛡️ System status & self-tests</h3>
+          <div id="secStatusBox"></div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px">
+            <button class="btn small primary" id="runTestsBtn">▶ Run self-tests</button>
+            <button class="btn small" id="resetTestsBtn">Clear results</button>
+          </div>
+          <div id="testResultsBox"></div>
+        </div>
+        <div class="card"><h3>🏛️ Ownership</h3><div id="ownerBox"></div></div>
         <div class="card"><h3>Data</h3>
           <div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn small" id="backupBtn">⬇ Backup JSON</button><button class="btn small" id="restoreBtn">⬆ Restore</button><input type="file" id="restoreFile" accept="application/json" hidden /><button class="btn small danger" id="wipeBtn">Reset everything</button></div>
           <p class="muted small">Backup includes products, orders, wallet, rewards & messages. Stored locally only.</p>
-          <h3>Help & status</h3><div class="muted small">● All systems live • v4.0 • <a href="#" id="footHelp2">Help center</a></div>
+          <h3>Help & status</h3><div class="muted small">● All systems live • <span id="appVersionLabel">v9.0.0</span> • <a href="#" id="footHelp2">Help center</a> • <a href="#" id="shortcutsLink">⌨ Shortcuts</a></div>
           <label style="margin-top:8px">Newsletter<input id="newsInput" placeholder="you@email.com" /></label>
           <button class="btn small primary" id="newsBtn" style="margin-top:8px">Subscribe → +5 pts</button>
         </div>
@@ -473,12 +509,12 @@
 <footer class="footer">
   <div class="foot-grid">
     <div><div class="brand"><span class="brand-mark sm">E</span><b>Empower</b></div>
-      <p class="muted small">The virtual economy for goods + coaching.<br />Demo build • data stored locally in your browser.</p></div>
+      <p class="muted small">The virtual economy for goods + coaching.<br />Demo build • data stored locally in your browser.<br /><span id="ownerFoot">Owned &amp; led by Juan-louw Greyling</span></p></div>
     <div><b>Marketplace</b><a href="#/marketplace" data-nav="marketplace">Browse</a><a href="#/deals" data-nav="deals">Flash deals</a><a href="#/services" data-nav="services">Hire services</a><a href="#/learn" data-nav="learn">Courses</a><a href="#/sell" data-nav="sell">Sell an item</a><a href="#/wishlist" data-nav="wishlist">Wishlist</a></div>
     <div><b>Coaching</b><a href="#/coaches" data-nav="coaches">Find a coach</a><a href="#/become-coach" data-nav="become-coach">Become a coach</a><a href="#/community" data-nav="community">Community</a><a href="#/inbox" data-nav="inbox">Inbox & disputes</a></div>
     <div><b>Trust</b><a href="#" id="footEscrow">Escrow & returns</a><a href="#" id="footFees">Fees</a><a href="#" id="footHelp">Help center</a><a href="#/settings" data-nav="settings">Settings & backup</a></div>
   </div>
-  <div class="foot-base muted small"><span>Seller protection • Escrow • Verified coaches • 2-day payouts</span><span>v4.0 • press <b>Ctrl+K</b> for commands • <b>/</b> to search</span></div>
+  <div class="foot-base muted small"><span>Seller protection • Escrow • Verified coaches • 2-day payouts • <a href="#" id="footStatus">● All systems live</a></span><span><span id="appVersionFoot">v9.0.0</span> • © <span id="ownerYear">2026</span> <span id="ownerNameFoot">Juan-louw Greyling</span> • press <b>Ctrl+K</b> for commands • <b>/</b> to search • <b>?</b> shortcuts</span></div>
 </footer>
 
 <!-- AUTH: login / signup / guest — one shared platform, private profiles -->
@@ -487,19 +523,19 @@
     <div class="brand" style="justify-content:center"><span class="brand-mark">E</span><span class="brand-text">Empower<small>one platform • your profile</small></span></div>
     <p class="muted small" style="text-align:center">🛍 Marketplace + 🎓 Coaching + 💬 Community — shared by everyone.<br />🔐 Wallet, cart & orders are <b>private to you</b>, like PayPal + Instagram in one.</p>
     <div class="tabs" id="authTabs"><button data-at="login" class="active">Log in</button><button data-at="signup">Sign up</button></div>
-    <div id="authLogin">
-      <label>Email<input id="loginEmail" type="email" placeholder="you@email.com" /></label>
-      <label>Password<input id="loginPw" type="password" placeholder="••••••" /></label>
+    <form id="authLogin" autocomplete="on">
+      <label>Email<input id="loginEmail" name="email" type="email" autocomplete="email" placeholder="you@email.com" /></label>
+      <label>Password<input id="loginPw" name="password" type="password" autocomplete="current-password" placeholder="••••••" /></label>
       <div class="muted small" id="loginErr" style="color:var(--red)"></div>
-      <button class="btn primary block" id="doLoginBtn">Log in →</button>
-    </div>
-    <div id="authSignup" hidden>
-      <label>Name<input id="suName" placeholder="Ada Lovelace" /></label>
-      <label>Email<input id="suEmail" type="email" placeholder="you@email.com" /></label>
-      <label>Password (6+ chars)<input id="suPw" type="password" placeholder="••••••" /></label>
+      <button class="btn primary block" id="doLoginBtn" type="submit">Log in →</button>
+    </form>
+    <form id="authSignup" hidden autocomplete="on">
+      <label>Name<input id="suName" name="name" autocomplete="name" placeholder="Ada Lovelace" /></label>
+      <label>Email<input id="suEmail" name="email" type="email" autocomplete="email" placeholder="you@email.com" /></label>
+      <label>Password (6+ chars)<input id="suPw" name="password" type="password" autocomplete="new-password" placeholder="••••••" /></label>
       <div class="muted small" id="suErr" style="color:var(--red)"></div>
-      <button class="btn primary block" id="doSignupBtn">Create account + 750 EC 🎉</button>
-    </div>
+      <button class="btn primary block" id="doSignupBtn" type="submit">Create account + 750 EC 🎉</button>
+    </form>
     <div class="muted small" style="text-align:center;margin:8px 0">— or —</div>
     <div class="demo-logins" id="demoLogins"></div>
     <button class="btn block" id="guestBtn">👀 Continue as guest (browse only)</button>
@@ -524,12 +560,20 @@
 
 <aside class="drawer" id="notifDrawer" aria-label="Notifications">
   <div class="drawer-head"><h3>🔔 Notifications</h3><button class="icon-btn" id="closeNotif">✕</button></div>
+  <div style="padding:12px 14px 0"><div class="notif-filters" id="notifFilters"><button data-nf="all" class="active">All</button><button data-nf="unread">Unread</button><button data-nf="orders">Orders</button><button data-nf="social">Social</button></div></div>
   <div class="drawer-body" id="notifList"></div>
   <div class="drawer-foot"><button class="btn block" id="clearNotif">Mark all read</button></div>
 </aside>
 
-<div class="modal-root" id="modalRoot"></div>
-<div class="toast-root" id="toastRoot"></div>
+<div class="compare-tray" id="compareTray" hidden><span id="compareLabel">Compare (0)</span><button class="btn small primary" id="compareOpen">Compare →</button><button class="btn small ghost" id="compareClear">Clear</button></div>
+
+<div class="modal-root" id="modalRoot" role="dialog" aria-modal="true"></div>
+<div class="toast-root" id="toastRoot" aria-live="polite"></div>
+<div class="undo-bar" id="undoBar" hidden role="status"><span></span><button id="undoBtn" class="btn ghost sm">↩ Undo</button></div>
+<div class="boot-loading" id="bootLoading" role="status" aria-live="polite"><div class="boot-spin" aria-hidden="true"></div><span>Securing your session…</span></div>
+<div class="sr-only" id="liveRegion" aria-live="polite" aria-atomic="true"></div>
+<div class="sr-only" id="liveAssertive" aria-live="assertive" aria-atomic="true"></div>
+<a class="skip-link" href="#mainNav">Skip to main navigation</a>
 
 <button class="assist-fab" id="assistFab" aria-label="Ask Ember">✨<span>Ember</span></button>
 <aside class="assist-panel" id="assistPanel" aria-label="Ember assistant" hidden>

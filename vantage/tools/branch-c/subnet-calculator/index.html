@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Subnet Calculator</title>
+<meta name="description" content="CIDR to subnet mask, host count, network and broadcast address, usable range.">
+<link rel="canonical" href="https://tools.vantage-ars.co.za/subnet-calculator/">
+<link rel="icon" type="image/svg+xml" href="/favicon.svg">
+<style>
+:root{--bg:#0b0e14;--card:#141a24;--text:#d9e2ef;--dim:#8b98ab;--accent:#00b7c2;--border:#1e2836}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font:16px/1.6 -apple-system,'Segoe UI',Roboto,sans-serif;padding:24px}
+.wrap{max-width:680px;margin:0 auto}
+h1{font-size:1.5rem;margin-bottom:4px}
+.sub{color:var(--dim);font-size:.9rem;margin-bottom:24px}
+.card{background:var(--card);border:1px solid var(--border);border-radius:8px;padding:20px;margin-bottom:16px}
+label{display:block;font-size:.8rem;color:var(--dim);margin:12px 0 4px}
+input{width:100%;background:#0b0e14;border:1px solid var(--border);color:var(--text);padding:10px;border-radius:6px;font-size:1rem}
+.res{display:flex;justify-content:space-between;border-bottom:1px dashed var(--border);padding:7px 0;font-size:.95rem}
+.res span:first-child{color:var(--dim)}.res span:last-child{color:var(--accent);font-family:monospace}
+.note{color:var(--dim);font-size:.78rem;margin-top:12px}
+a{color:var(--accent)}
+</style>
+</head>
+<body>
+<div class="wrap">
+<h1>Subnet Calculator</h1>
+<p class="sub">CIDR notation in, real numbers out.</p>
+<div class="card">
+<label for="cidr">Address with prefix (e.g. 192.168.10.0/24)</label>
+<input id="cidr" value="192.168.10.0/24" oninput="calc()" spellcheck="false" autocomplete="off">
+</div>
+<div class="card" id="out"></div>
+<div class="card">
+<p class="note"><strong>Host conventions, stated rather than assumed:</strong></p>
+<p class="note">/32 is a single host (RFC 3021 host route) - 1 usable address.<br>
+/31 is a point-to-point link (RFC 3021) - 2 usable addresses under RFC 3021, but many vendors still reserve
+the network and broadcast addresses. If your gear is old, treat a /31 as 0 usable hosts.<br>
+/30 and larger use the classic rule: total minus 2 (network + broadcast).</p>
+<p class="note">Related: <a href="/">all VANTAGE tools</a></p>
+</div>
+</div>
+<script>
+function calc(){
+  const raw = document.getElementById('cidr').value.trim();
+  const out = document.getElementById('out');
+  const parts = raw.split('/');
+  const ip = parts[0], pref = parseInt(parts[1], 10);
+  const o = (ip||'').trim().split('.').map(Number);
+  const valid = o.length===4 && o.every(n=>Number.isInteger(n)&&n>=0&&n<=255)
+              && Number.isInteger(pref) && pref>=0 && pref<=32 && parts.length===2;
+  if(!valid){
+    out.innerHTML = '<div class="res"><span>Input</span><span>invalid</span></div>'
+      + '<p class="note">Expected an IPv4 address and a prefix between 0 and 32, for example 192.168.10.0/24.</p>';
+    return;
+  }
+  const mask = pref===0?0:(0xFFFFFFFF << (32-pref)) >>> 0;
+  const ipN = (((o[0]<<24)|(o[1]<<16)|(o[2]<<8)|o[3]) >>> 0);
+  const net = (ipN & mask) >>> 0, bc = (net | (~mask >>> 0)) >>> 0;
+  const hosts = pref===32 ? 1 : (pref===31 ? 2 : (Math.pow(2, 32-pref) - 2));
+  const f = n => [(n>>>24)&255,(n>>>16)&255,(n>>>8)&255,n&255].join('.');
+  const range = pref>=31 ? 'n/a (single link/host)' : `${f(net+1)} - ${f(Math.max(net+1, bc-1))}`;
+  const rows = [
+    ['Network address', f(net)],
+    ['Subnet mask', f(mask)],
+    ['Broadcast', f(bc)],
+    ['Usable range', range],
+    ['Usable hosts', hosts.toLocaleString('en-ZA')],
+    ['Wildcard mask', f(~mask >>> 0)],
+    ['Total addresses', Math.pow(2, 32-pref).toLocaleString('en-ZA')]
+  ];
+  out.innerHTML = rows.map(([k,v])=>`<div class="res"><span>${k}</span><span>${v}</span></div>`).join('')
+    + (pref<=30 ? '<p class="note">Usable hosts excludes the network and broadcast addresses.</p>'
+                : '<p class="note">Host count uses the RFC 3021 convention for /31 and /32 - see the note below.</p>');
+}
+calc();
+</script>
+</body>
+</html>

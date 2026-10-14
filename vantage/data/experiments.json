@@ -1,0 +1,18 @@
+{
+  "_schema_version": 1,
+  "note": "Growth experiment log. Maintained by the Experimenter agent; one running experiment per branch. Verdicts: won | lost | inconclusive.",
+  "experiments": [
+    {
+      "id": "EXP-0001",
+      "branch": "branch-a",
+      "hypothesis": "TEMPLATE - if we [change], then [metric] improves by [x%]",
+      "success_metric": "DEFINE BEFORE STARTING - e.g. calculator CTR >= 5%",
+      "status": "proposed",
+      "started_at": null,
+      "ended_at": null,
+      "verdict": null,
+      "effect": null,
+      "lesson": null
+    }
+  ]
+}

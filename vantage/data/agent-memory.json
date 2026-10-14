@@ -1,0 +1,11 @@
+{
+  "_note": "Hybrid team memory (see agents/memory.md). Episodes = recent events, pruned at 90 days. Lessons = generalizable rules; pinned lessons are hard constraints.",
+  "episodes": [
+    { "date": "2026-09-28", "agent": "System", "what": "Memory protocol added, adapted from Project Genesis. Seed content is empty on purpose - memory earns its entries." }
+  ],
+  "lessons": [
+    { "date": "2026-09-28", "text": "SA pricing changes often; any ZAR price in an article or calculator must carry its as-of date or a linked source.", "pinned": true },
+    { "date": "2026-09-28", "text": "Amazon Associates SA eligibility must be re-verified before each recommendation batch, not assumed from a past check.", "pinned": true },
+    { "date": "2026-10-10", "text": "A missing metric is unknown, not zero. The Allocator excludes branches whose analytics have not arrived rather than ranking them last.", "pinned": true }
+  ]
+}

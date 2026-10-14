@@ -1,0 +1,11 @@
+{
+  "name": "VANTAGE - Branch A",
+  "tagline": "VoIP, networking hardware & ITSM - from the field, not the brochure",
+  "domain": "vantage-ars.co.za",
+  "urls": {
+    "site": "https://vantage-ars.co.za",
+    "calculators": "https://tools.vantage-ars.co.za",
+    "api": "https://api.vantage-ars.co.za"
+  },
+  "note": "Domain registered (vantage-ars.co.za). Branch A serves from the root; Branch C calculators from tools.*; Worker from api.*; Branch B clusters from <name>.* subdomains."
+}

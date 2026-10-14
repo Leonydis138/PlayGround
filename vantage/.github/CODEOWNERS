@@ -1,0 +1,4 @@
+# CODEOWNERS - every line of this repo belongs to the CEO.
+# Solo operation: the CEO reviews everything. Replace YOUR-GITHUB-USERNAME
+# with your actual handle once (same name as the repo owner).
+* @YOUR-GITHUB-USERNAME

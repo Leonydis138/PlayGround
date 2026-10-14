@@ -1,0 +1,12 @@
+version: 2
+updates:
+  # Keeps Actions versions current (checkout, setup-node, upload-artifact).
+  # The repo is dependency-free by rule - GitHub Actions is the only
+  # dependency surface that exists, so this is the only ecosystem needed.
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    # Solo operator: auto-merge minor/patch of action versions keeps
+    # security fixes flowing without CEO attention. Major bumps still PR.
+    open-pull-requests-limit: 3

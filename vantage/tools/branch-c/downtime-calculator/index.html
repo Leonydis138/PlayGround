@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Downtime Cost Calculator</title>
+<meta name="description" content="What does one hour of downtime actually cost your SME? Employees idle, revenue stopped, recovery overtime - in Rands, math shown.">
+<link rel="canonical" href="https://tools.vantage-ars.co.za/downtime-calculator/">
+<link rel="icon" type="image/svg+xml" href="/favicon.svg">
+<style>
+:root{--bg:#0b0e14;--card:#141a24;--text:#d9e2ef;--dim:#8b98ab;--accent:#00b7c2;--border:#1e2836}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font:16px/1.6 -apple-system,'Segoe UI',Roboto,sans-serif;padding:24px}
+.wrap{max-width:680px;margin:0 auto}
+h1{font-size:1.5rem;margin-bottom:4px}
+.sub{color:var(--dim);font-size:.9rem;margin-bottom:24px}
+.card{background:var(--card);border:1px solid var(--border);border-radius:8px;padding:20px;margin-bottom:16px}
+label{display:block;font-size:.8rem;color:var(--dim);margin:12px 0 4px}
+input,select{width:100%;background:#0b0e14;border:1px solid var(--border);color:var(--text);padding:10px;border-radius:6px;font-size:1rem}
+table{width:100%;border-collapse:collapse;margin-top:8px;font-size:.9rem}
+td,th{border:1px solid var(--border);padding:8px 10px;text-align:left}
+th{color:var(--dim);font-weight:600;background:#0b0e14}td:last-child,th:last-child{text-align:right}
+td:last-child{color:var(--accent);font-family:monospace}
+.note{color:var(--dim);font-size:.8rem;margin-top:8px}
+.big{font-size:1.2rem;color:var(--accent)}
+a{color:var(--accent)}
+</style>
+</head>
+<body>
+<div class="wrap">
+<h1>Downtime Cost Calculator</h1>
+<p class="sub">One hour down is not "one hour of IT work". It is idle salaries plus stopped revenue. Math shown, not hidden.</p>
+
+<div class="card">
+<label for="staff">Staff affected by the outage</label>
+<input id="staff" type="number" min="0" value="20" oninput="calc()">
+<label for="rate">Fully-loaded average cost per staff hour (R)</label>
+<input id="rate" type="number" min="0" value="350" oninput="calc()">
+<div class="note">Salary + benefits + overhead, per hour. R350/h is a reasonable loaded rate for a mid-level SME employee.</div>
+<label for="productive">Share of affected staff who are actually blocked (%)</label>
+<input id="productive" type="number" min="0" max="100" value="70" oninput="calc()">
+<div class="note">Not everyone stops when systems drop. The honest number is usually 50-80%, not 100%.</div>
+<label for="revhr">Revenue per hour of operation (R)</label>
+<input id="revhr" type="number" min="0" value="4000" oninput="calc()">
+<div class="note">Annual revenue / business hours per year (about 2000-2100). Use the hours the business actually earns.</div>
+<label for="revstop">Share of revenue actually stopped during downtime (%)</label>
+<input id="revstop" type="number" min="0" max="100" value="60" oninput="calc()">
+<div class="note">Some orders just arrive late; some are lost outright. Be honest: which is which for your business?</div>
+<label for="hours">Downtime duration (hours)</label>
+<input id="hours" type="number" min="0" step="0.5" value="4" oninput="calc()">
+<label for="recovery">Recovery / overtime cost (R, once)</label>
+<input id="recovery" type="number" min="0" value="2000" oninput="calc()">
+<div class="note">After-hours callout, emergency helpdesk, that sort of thing. Often forgotten, always real.</div>
+</div>
+
+<div class="card">
+<table id="out"><tbody></tbody></table>
+</div>
+
+<div class="card">
+<div class="big" id="total"></div>
+<div class="note" id="total-note"></div>
+</div>
+
+<div class="card">
+<p><strong>Why this calculator exists:</strong> vendors sell uptime percentages; the SLA
+calculator next door tells you how many minutes a year 99.9% allows. This one
+tells you what those minutes cost. Multiply them together before you sign -
+or before you decide the cheaper, less redundant option is "good enough".</p>
+<p class="note"><a href="/sla-calculator/">SLA / Uptime Calculator</a> | <a href="/">All VANTAGE tools</a></p>
+</div>
+
+<script>
+const r = n => (!Number.isFinite(n) ? '-' : 'R' + Math.round(n).toLocaleString('en-ZA'));
+// Defensive numeric read: a blank or non-numeric field becomes 0 rather than NaN.
+function num(id){
+  const v = parseFloat(document.getElementById(id).value);
+  return Number.isFinite(v) && v >= 0 ? v : 0;
+}
+function calc(){
+  const staff = num('staff');
+  const rate = num('rate');
+  const blocked = Math.min(100, num('productive')) / 100;
+  const revhr = num('revhr');
+  const revstop = Math.min(100, num('revstop')) / 100;
+  const hours = num('hours');
+  const recovery = num('recovery');
+
+  const idle = staff * rate * blocked * hours;          // salaries paid for nothing
+  const lostRev = revhr * revstop * hours;              // revenue that never happened
+  const total = idle + lostRev + recovery;
+
+  document.querySelector('#out tbody').innerHTML = [
+    ['Idle staff cost (blocked share)', r(idle)],
+    ['Stopped revenue (lost share)', r(lostRev)],
+    ['Recovery / overtime (once)', r(recovery)],
+    ['Cost per hour of this outage', hours > 0 ? r(total/hours) : 'n/a (no duration given)']
+  ].map(([l,v]) => `<tr><th scope="row">${l}</th><td>${v}</td></tr>`).join('');
+
+  document.getElementById('total').textContent = `Total cost of this outage: ${r(total)}`;
+  document.getElementById('total-note').textContent =
+    hours > 0 ? `Over a year, one such outage per quarter would be about ${r(total*4)}.` : 'Enter an outage duration to project the annual figure.';
+}
+calc();
+</script>
+</body>
+</html>

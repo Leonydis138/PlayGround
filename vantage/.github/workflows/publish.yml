@@ -1,0 +1,120 @@
+name: Publish to Cloudflare Pages
+
+# Deploy path A (preferred, zero Actions minutes): Cloudflare Pages git
+# integration - Workers & Pages -> Create -> Pages -> Connect to Git, once per
+# project (branch-a, branch-c, dashboard, one per graduated cluster), each
+# with its own build command + output dir. If you use that, disable this
+# workflow to avoid double deploys.
+#
+# Deploy path B (this workflow): direct wrangler deploy on every push.
+# Requires repo secrets: CF_API_TOKEN (Pages:Edit on the account) and
+# CF_ACCOUNT_ID - the SAME two secrets weekly.yml uses (mapped below into
+# wrangler's native CLOUDFLARE_* env names). Without them the workflow
+# builds and exits cleanly - nothing is deployed, nothing fails.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'sites/**'
+      - 'tools/**'
+      - 'dashboard/**'
+      - 'scripts/**'
+      - 'scripts/assets/**'
+      - 'data/**'
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read        # least privilege: this job only deploys
+    concurrency:
+      group: pages-deploy   # never two overlapping deploys of the same sites
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22 }
+      # One wrangler install instead of 6+ npx cold-starts. All build scripts
+      # are zero-dependency (node: imports only, no package.json), so this is
+      # the only npm package the workflow needs.
+      - name: Install wrangler
+        run: npm install -g wrangler
+      - name: Build Branch A (dependency-free)
+        run: node scripts/build-site.mjs branch-a
+      - name: Build Branch B graduated clusters (if any)
+        run: |
+          for d in sites/branch-b/graduated/*/; do
+            [ -d "$d" ] || continue
+            node scripts/build-site.mjs "$d"
+          done
+          echo "Done (no graduated clusters yet is fine)."
+      - name: Regenerate sitemaps + robots.txt (all sites)
+        run: node scripts/build-sitemaps.mjs
+      - name: Rebuild dashboard dist (data.json refresh)
+        run: node scripts/build-dashboard.mjs
+      - name: Deploy to Cloudflare Pages
+        env:
+          # Canonical repo secrets (same names as weekly.yml), mapped into
+          # wrangler's native env var names.
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CF_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CF_ACCOUNT_ID }}
+        run: |
+          if [ -z "$CLOUDFLARE_API_TOKEN" ] || [ -z "$CLOUDFLARE_ACCOUNT_ID" ]; then
+            echo "Cloudflare secrets not set - build only, no deploy."
+            echo "Either add CF_API_TOKEN + CF_ACCOUNT_ID as repo"
+            echo "secrets (Pages:Edit permission), or use the Pages git integration."
+            exit 0
+          fi
+          # All deploys attempted even if some fail; FAILED makes the job red
+          # at the end without blocking the remaining sites.
+          # --commit-dirty: the dist/ dirs we just built are not committed, so
+          # the tree is always dirty.
+          #
+          # create_if_missing() is NOT a blanket `|| true`: it swallows a real
+          # auth/account failure just as happily as "already exists". We only
+          # tolerate the case where the error output proves the project is
+          # already there; every other failure aborts the loop so a broken
+          # token cannot masquerade as a successful deploy.
+          create_if_missing() {
+            project="$1"
+            if wrangler pages project list 2>&1 | grep -Fq "$project"; then
+              echo "project $project already exists"
+              return 0
+            fi
+            wrangler pages project create "$project" --production-branch=main
+          }
+          set +e
+          FAILED=0
+          for p in branch-a branch-c dashboard; do
+            create_if_missing "$p" || { echo "::error::Cannot create/locate Pages project $p - check CF_API_TOKEN scope and CF_ACCOUNT_ID"; FAILED=1; }
+          done
+          # Branch A (project: branch-a, custom domain vantage-ars.co.za)
+          wrangler pages deploy sites/branch-a/dist --project-name=branch-a --commit-dirty \
+            || { echo "::warning::Deploy failed for branch-a"; FAILED=1; }
+          # Branch C calculators (project: branch-c, tools.vantage-ars.co.za)
+          wrangler pages deploy tools/branch-c --project-name=branch-c --commit-dirty \
+            || { echo "::warning::Deploy failed for branch-c"; FAILED=1; }
+          # Dashboard (project: dashboard, dash.vantage-ars.co.za)
+          if [ -d dashboard/dist ]; then
+            wrangler pages deploy dashboard/dist --project-name=dashboard --commit-dirty \
+              || { echo "::warning::Deploy failed for dashboard"; FAILED=1; }
+          else
+            wrangler pages deploy dashboard --project-name=dashboard --commit-dirty \
+              || { echo "::warning::Deploy failed for dashboard"; FAILED=1; }
+          fi
+          # Graduated Branch B clusters: one project per cluster, custom domain
+          # <name>.vantage-ars.co.za (wildcard DNS makes that one click).
+          for d in sites/branch-b/graduated/*/; do
+            [ -d "$d" ] || continue
+            name=$(basename "$d")
+            create_if_missing "b-$name" || { echo "::error::Cannot create/locate Pages project b-$name"; FAILED=1; }
+            [ -d "$d/dist" ] || node scripts/build-site.mjs "$d"
+            wrangler pages deploy "$d/dist" --project-name="b-$name" --commit-dirty \
+              || { echo "::warning::Deploy failed for cluster b-$name"; FAILED=1; }
+          done
+          set -e
+          if [ "$FAILED" = "1" ]; then
+            echo "One or more deploys failed - see errors/warnings above."
+          fi
+          exit $FAILED
