@@ -1,0 +1,72 @@
+name = "vantage-ars"
+main = "src/worker.js"
+compatibility_date = "2026-09-28"
+
+workers_dev = true
+preview_urls = true
+
+# ============================================================
+# D1 — VANTAGE ARS PRIMARY DATABASE
+# ============================================================
+
+[[d1_databases]]
+binding = "DB"
+database_name = "vantage-data"
+database_id = "9eed1616-7546-4855-a150-11a92fb7621c"
+
+
+# ============================================================
+# WORKERS AI
+# ============================================================
+
+[ai]
+binding = "AI"
+
+
+# ============================================================
+# DURABLE WORKFLOW
+# ============================================================
+
+[[workflows]]
+binding = "AGENT_WORKFLOW"
+name = "vantage-agent-task"
+class_name = "AgentTaskWorkflow"
+
+
+# ============================================================
+# SCHEDULES
+# ============================================================
+#
+# Monday 07:00 UTC
+# Existing Writer/content cycle
+#
+# Every 15 minutes
+# Autonomous operating/task scheduler
+#
+
+[triggers]
+crons = [
+  "0 7 * * 1",
+  "*/15 * * * *"
+]
+
+
+# ============================================================
+# CUSTOM DOMAINS
+# ============================================================
+
+[[routes]]
+pattern = "vantage-ars.co.za"
+custom_domain = true
+
+[[routes]]
+pattern = "www.vantage-ars.co.za"
+custom_domain = true
+
+
+# ============================================================
+# OBSERVABILITY
+# ============================================================
+
+[observability]
+enabled = true
